@@ -24,6 +24,8 @@ public class CustomerLimit {
     private UUID id;
     @Column(name = "credit_limit", nullable = false, precision = 19, scale = 2)
     private BigDecimal creditLimit;
+    @Column(name = "available_limit", nullable = false, precision = 19, scale = 2)
+    private BigDecimal availableLimit;
     @CreationTimestamp
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;

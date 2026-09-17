@@ -16,6 +16,7 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     Optional<Customer> findByPhoneNumberAndDeletedDateIsNull(String phoneNumber);
     boolean existsByPhoneNumberAndDeletedDateIsNull(String phoneNumber);
     boolean existsByEmailAndDeletedDateIsNull(String email);
+    Optional<Customer> findByEmail(String email);
 
     List<Customer> findByVerificationStatus(
             VerificationStatus verificationStatus

@@ -6,7 +6,7 @@ target/
 
 ### STS ###
 .apt_generated
-.classpath
+.classpathok
 .factorypath
 .project
 .settings
@@ -33,3 +33,5 @@ build/
 .vscode/
 
 .env
+
+/secrets

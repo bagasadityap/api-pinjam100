@@ -29,7 +29,7 @@ public class LoanApplicationApproval {
     private UUID id;
 
     @Column(name = "approval_level", nullable = false)
-    private Integer approvalLevel;
+    private Integer approvalLevel = 1;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

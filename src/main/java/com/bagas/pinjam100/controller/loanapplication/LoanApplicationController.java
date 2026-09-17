@@ -91,10 +91,10 @@ public class  LoanApplicationController {
         return loanApplicationService.save(loanApplicationRequest);
     }
 
-    @PutMapping("/{id}")
-    public LoanApplicationResponse update(@PathVariable UUID id, @RequestBody LoanApplicationRequest loanApplicationRequest) {
-        return loanApplicationService.update(id, loanApplicationRequest);
-    }
+//    @PutMapping("/{id}")
+//    public LoanApplicationResponse update(@PathVariable UUID id, @RequestBody LoanApplicationRequest loanApplicationRequest) {
+//        return loanApplicationService.update(id, loanApplicationRequest);
+//    }
 
     @DeleteMapping("/{id}")
     public LoanApplicationResponse delete(@PathVariable UUID id) {

@@ -27,19 +27,16 @@ public class LoanInstallment {
     private LoanApplication loanApplication;
 
     @Column(name = "installment_number", nullable = false)
-    private Integer installmentNumber;
+    private String installmentNumber;
+
+    @Column(name = "installment_sequence", nullable = false)
+    private Integer installmentSequence;
 
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(name = "principal_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal principalAmount;
-
-    @Column(name = "interest_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal interestAmount;
-
-    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal totalAmount;
+    @Column(name = "installment_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal installmentAmount;
 
     @Column(name = "paid_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal paidAmount;

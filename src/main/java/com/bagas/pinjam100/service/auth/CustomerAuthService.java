@@ -12,6 +12,7 @@ import com.bagas.pinjam100.exception.ConflictException;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.service.jwt.JwtService;
 import com.bagas.pinjam100.service.jwt.TokenBlacklistService;
+import com.bagas.pinjam100.service.notification.CustomerDeviceService;
 import com.bagas.pinjam100.service.otp.OtpVerificationService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -34,6 +35,7 @@ public class CustomerAuthService {
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
     private final OtpVerificationService otpVerificationService;
+    private final CustomerDeviceService customerDeviceService;
 
     private static final String NOT_FOUND_MESSAGE = "Customer tidak ditemukan";
     private static final String FALSE_CREDENTIALS = "Nomor telepon atau password salah";
@@ -61,6 +63,15 @@ public class CustomerAuthService {
             );
         }
 
+        if (request.getFcmToken() != null && !request.getFcmToken().isBlank()) {
+            customerDeviceService.register(
+                    customer,
+                    new com.bagas.pinjam100.dto.notification.RegisterDeviceRequest(
+                            request.getFcmToken()
+                    )
+            );
+        }
+
         return createAuthResponse(customer, message);
     }
 
@@ -68,8 +79,14 @@ public class CustomerAuthService {
         Instant expiresAt = jwtService.getExpiration(token);
 
         Customer customer = customerRepository
-                .findByPhoneNumberAndDeletedDateIsNull(jwtService.parse(token).getSubject())
-                .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND_MESSAGE));
+                .findByPhoneNumberAndDeletedDateIsNull(
+                        jwtService.parse(token).getSubject()
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                NOT_FOUND_MESSAGE
+                        )
+                );
 
         customer.setLogoutDate(
                 LocalDateTime.now(ZoneId.of("Asia/Jakarta"))
@@ -95,13 +112,23 @@ public class CustomerAuthService {
     }
 
     @Transactional
-    public ResponseEntity<BaseResponse<Void>> register(CustomerRequest request) {
-        if (customerRepository.existsByPhoneNumberAndDeletedDateIsNull(request.getPhoneNumber())) {
-            throw new ConflictException("Nomor telepon sudah terdaftar");
+    public ResponseEntity<BaseResponse<Void>> register(
+            CustomerRequest request
+    ) {
+        if (customerRepository.existsByPhoneNumberAndDeletedDateIsNull(
+                request.getPhoneNumber()
+        )) {
+            throw new ConflictException(
+                    "Nomor telepon sudah terdaftar"
+            );
         }
 
-        if (customerRepository.existsByEmailAndDeletedDateIsNull(request.getEmail())) {
-            throw new ConflictException("Email sudah terdaftar");
+        if (customerRepository.existsByEmailAndDeletedDateIsNull(
+                request.getEmail()
+        )) {
+            throw new ConflictException(
+                    "Email sudah terdaftar"
+            );
         }
 
         Customer customer = new Customer();
@@ -116,14 +143,20 @@ public class CustomerAuthService {
         customer.setFullName(request.getFullName());
         customer.setEmail(request.getEmail());
         customer.setPhoneNumber(request.getPhoneNumber());
-        customer.setPassword(passwordEncoder.encode(request.getPassword()));
+        customer.setPassword(
+                passwordEncoder.encode(request.getPassword())
+        );
 
         customerRepository.save(customer);
 
-        otpVerificationService.generate(customer.getPhoneNumber());
+        otpVerificationService.generate(
+                customer.getPhoneNumber()
+        );
 
         return ResponseEntity.ok(
-                BaseResponse.success("Registrasi berhasil")
+                BaseResponse.success(
+                        "Registrasi berhasil"
+                )
         );
     }
 
@@ -140,9 +173,11 @@ public class CustomerAuthService {
                 .findByPhoneNumberAndDeletedDateIsNull(
                         request.getPhoneNumber()
                 )
-                .orElseThrow(() -> new EntityNotFoundException(
-                        NOT_FOUND_MESSAGE
-                ));
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                NOT_FOUND_MESSAGE
+                        )
+                );
 
         Instant now = Instant.now();
 
@@ -152,7 +187,11 @@ public class CustomerAuthService {
 
         customerRepository.save(customer);
 
-        String token = jwtService.issueCustomer(customer, now);
+        String token = jwtService.issueCustomer(
+                customer,
+                now
+        );
+
         Instant expiresAt = jwtService.getExpiration(token);
 
         CustomerAuthUserResponse user = new CustomerAuthUserResponse(
@@ -178,14 +217,18 @@ public class CustomerAuthService {
         );
     }
 
-    public ResponseEntity<BaseResponse<Void>> resendOtp(ResendOtpRequest request) {
+    public ResponseEntity<BaseResponse<Void>> resendOtp(
+            ResendOtpRequest request
+    ) {
         Customer customer = customerRepository
                 .findByPhoneNumberAndDeletedDateIsNull(
                         request.getPhoneNumber()
                 )
-                .orElseThrow(() -> new EntityNotFoundException(
-                        NOT_FOUND_MESSAGE
-                ));
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                NOT_FOUND_MESSAGE
+                        )
+                );
 
         if (customer.getVerificationStatus() == VerificationStatus.VERIFIED) {
             throw new ConflictException(
@@ -198,7 +241,56 @@ public class CustomerAuthService {
         );
 
         return ResponseEntity.ok(
-                BaseResponse.success("OTP berhasil dikirim ulang")
+                BaseResponse.success(
+                        "OTP berhasil dikirim ulang"
+                )
+        );
+    }
+
+    public ResponseEntity<BaseResponse<Void>> changePassword(
+            String token,
+            ChangePasswordRequest request
+    ) {
+        String phoneNumber = jwtService.getUsername(token);
+
+        Customer customer = customerRepository
+                .findByPhoneNumberAndDeletedDateIsNull(phoneNumber)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Customer tidak ditemukan"
+                        )
+                );
+
+        if (!passwordEncoder.matches(
+                request.getCurrentPassword(),
+                customer.getPassword()
+        )) {
+            throw new RuntimeException(
+                    "Password saat ini salah"
+            );
+        }
+
+        if (passwordEncoder.matches(
+                request.getNewPassword(),
+                customer.getPassword()
+        )) {
+            throw new RuntimeException(
+                    "Password baru tidak boleh sama dengan password lama"
+            );
+        }
+
+        customer.setPassword(
+                passwordEncoder.encode(
+                        request.getNewPassword()
+                )
+        );
+
+        customerRepository.save(customer);
+
+        return ResponseEntity.ok(
+                BaseResponse.success(
+                        "Password berhasil diubah"
+                )
         );
     }
 
@@ -214,7 +306,11 @@ public class CustomerAuthService {
 
         customerRepository.save(customer);
 
-        String token = jwtService.issueCustomer(customer, now);
+        String token = jwtService.issueCustomer(
+                customer,
+                now
+        );
+
         Instant expiresAt = jwtService.getExpiration(token);
 
         CustomerAuthUserResponse user = new CustomerAuthUserResponse(

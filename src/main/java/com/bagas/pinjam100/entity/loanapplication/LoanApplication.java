@@ -30,6 +30,8 @@ public class LoanApplication {
     private Integer tenorMonths;
     @Column(name = "interest_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal interestRate;
+    @Column(name = "installment_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal installmentAmount;
     @Column(nullable = false)
     private String purpose;
     @Enumerated(EnumType.STRING)
@@ -50,7 +52,4 @@ public class LoanApplication {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rekening_id")
-    private Rekening rekening;
 }

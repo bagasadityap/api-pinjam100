@@ -46,8 +46,8 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
                         .frameOptions(frame -> frame.deny()))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**", "/test/**").permitAll()
-                        .requestMatchers("/document", "/document/**").authenticated()
+                        .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email").permitAll()
+                        .requestMatchers("/document", "/document/**", "/installment").authenticated()
                         .requestMatchers("/user", "/user/**", "/role", "/role/**", "/permission", "/permission/**", "/branch", "/branch/**", "/wilayah", "/wilayah/**", "/customer", "/customer/**", "/loan-application", "/loan-application/**", "/customer-limit", "/customer-limit/**").authenticated()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception

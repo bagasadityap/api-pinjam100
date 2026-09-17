@@ -8,6 +8,7 @@ import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Setter
@@ -25,6 +26,7 @@ public class LoanApplicationResponse {
     private BigDecimal interestRate;
     private String purpose;
     private LoanApplicationStatus status;
+    private LocalDateTime createdDate;
 
     public LoanApplicationResponse(
             LoanApplication loanApplication,
@@ -37,6 +39,7 @@ public class LoanApplicationResponse {
         this.interestRate = loanApplication.getInterestRate();
         this.purpose = loanApplication.getPurpose();
         this.status = loanApplication.getStatus();
+        this.createdDate = loanApplication.getCreatedDate();
 
         if (loanApplication.getCustomer() != null) {
             this.customer = new CustomerResponse(

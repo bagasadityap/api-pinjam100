@@ -24,7 +24,7 @@ public class LoanDisbursement {
     @Column(name = "disbursement_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal disbursementAmount;
 
-    @Column(name = "transaction_reference", unique = true)
+    @Column(name = "transaction_reference", unique = true, nullable = false)
     private String transactionReference;
 
     @CreationTimestamp

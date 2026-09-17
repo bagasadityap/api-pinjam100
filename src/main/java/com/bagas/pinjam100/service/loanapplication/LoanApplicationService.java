@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.loanapplication;
 
+import com.bagas.pinjam100.config.loan.LoanConfig;
 import com.bagas.pinjam100.dto.request.loanapplication.ApprovalRequest;
 import com.bagas.pinjam100.dto.request.loanapplication.DisbursementRequest;
 import com.bagas.pinjam100.dto.request.loanapplication.LoanApplicationRequest;
@@ -7,8 +8,12 @@ import com.bagas.pinjam100.dto.request.loanapplication.ReviewRequest;
 import com.bagas.pinjam100.dto.response.customer.CustomerDetailResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.*;
 import com.bagas.pinjam100.entity.customer.*;
+import com.bagas.pinjam100.entity.installment.InstallmentStatus;
+import com.bagas.pinjam100.entity.installment.LoanInstallment;
 import com.bagas.pinjam100.entity.loanapplication.*;
+import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
+import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationApprovalRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
@@ -17,12 +22,18 @@ import com.bagas.pinjam100.repository.loanapplication.LoanApplicationReviewRepos
 import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
 import com.bagas.pinjam100.service.auth.AuthService;
 import com.bagas.pinjam100.service.customer.CustomerService;
+import com.bagas.pinjam100.service.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -32,12 +43,18 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LoanApplicationService {
     private final LoanApplicationRepository loanApplicationRepository;
+    private final CustomerRepository customerRepository;
     private final CustomerLimitRepository customerLimitRepository;
     private final CustomerService customerService;
     private final LoanApplicationReviewRepository loanApplicationReviewRepository;
     private final LoanApplicationApprovalRepository loanApplicationApprovalRepository;
     private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
+    private final BranchRepository branchRepository;
+    private final RekeningRepository rekeningRepository;
     private final AuthService authService;
+    private final NotificationService notificationService;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     public List<LoanApplicationResponse> findAllByDeletedDateIsNull() {
         return loanApplicationRepository.findAllByDeletedDateIsNull()
@@ -135,9 +152,14 @@ public class LoanApplicationService {
                 .findByCustomer_IdAndDeletedDateIsNull(response.getCustomer().getId())
                 .orElse(null);
 
+        Rekening rekening = rekeningRepository
+                .findByCustomer_IdAndDeletedDateIsNull(response.getCustomer().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Rekening tidak ditemukan"));
+
         return new LoanApplicationDisbursementResponse(
                 response,
-                customerLimit
+                customerLimit,
+                rekening
         );
     }
 
@@ -165,42 +187,86 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Transactional
     public LoanApplicationResponse save(LoanApplicationRequest request) {
+        if (request.getLoanAmount().compareTo(LoanConfig.MIN_LOAN_AMOUNT) < 0) {
+            throw new IllegalArgumentException(
+                    "Minimum pinjaman adalah Rp500.000"
+            );
+        }
+
+        if (request.getLoanAmount().compareTo(LoanConfig.MAX_LOAN_AMOUNT) > 0) {
+            throw new IllegalArgumentException(
+                    "Maksimum pinjaman adalah Rp35.000.000"
+            );
+        }
+
+
+        Customer customer = customerRepository.findByIdAndDeletedDateIsNull(request.getCustomerId())
+                .orElseThrow(() -> new EntityNotFoundException("Customer tidak ditemukan"));
+
         LoanApplication loanApplication = new LoanApplication();
-        loanApplication.setId(UUID.randomUUID());
-        loanApplication.setApplicationId(UUID.randomUUID().toString());
-        loanApplication.setBranch(request.getBranch());
+        String applicationId = "APP-" +
+                LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) +
+                "-" +
+                String.format("%010d", RANDOM.nextInt(1_000_000_000));
+        loanApplication.setApplicationId(applicationId);
+        loanApplication.setStatus(LoanApplicationStatus.UNDER_REVIEW);
         loanApplication.setLoanAmount(request.getLoanAmount());
-        loanApplication.setTenorMonths(request.getTenor_months());
-        loanApplication.setInterestRate(request.getInterestRate());
+        loanApplication.setTenorMonths(request.getTenorMonths());
         loanApplication.setPurpose(request.getPurpose());
+        loanApplication.setInterestRate(LoanConfig.DAILY_INTEREST_RATE);
 
-        loanApplicationRepository.save(loanApplication);
+        BigDecimal totalInterest = loanApplication.getLoanAmount()
+                .multiply(loanApplication.getInterestRate())
+                .multiply(BigDecimal.valueOf(LoanConfig.DAYS_PER_MONTH))
+                .multiply(BigDecimal.valueOf(loanApplication.getTenorMonths()))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        CustomerLimit customerLimit = customerLimitRepository
-                .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+        BigDecimal totalPayment = loanApplication.getLoanAmount()
+                .add(totalInterest);
 
-        return new LoanApplicationResponse(
-                loanApplication,
-                customerLimit
+        BigDecimal installmentAmount = totalPayment
+                .divide(
+                        BigDecimal.valueOf(loanApplication.getTenorMonths()),
+                        2,
+                        RoundingMode.HALF_UP
+                );
+
+        loanApplication.setInstallmentAmount(installmentAmount);
+        loanApplication.setCustomer(customer);
+        loanApplication.setBranch(
+                branchRepository.findByCityAndDeletedDateIsNull(
+                        customer.getDetail().getCity()
+                ).orElseGet(() ->
+                        branchRepository.findByCityAndDeletedDateIsNull(
+                                "Kota Administrasi Jakarta Selatan"
+                        ).orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Branch Kota Administrasi Jakarta Selatan tidak ditemukan"
+                                )
+                        )
+                )
         );
-    }
 
-    public LoanApplicationResponse update(UUID id, LoanApplicationRequest request) {
-        LoanApplication loanApplication = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
-                .orElseThrow(() -> new EntityNotFoundException("Aplikasi pinjaman tidak ditemukan"));
-
-        loanApplication.setBranch(request.getBranch());
-        loanApplication.setLoanAmount(request.getLoanAmount());
-        loanApplication.setTenorMonths(request.getTenor_months());
-        loanApplication.setInterestRate(request.getInterestRate());
-        loanApplication.setPurpose(request.getPurpose());
-        loanApplicationRepository.save(loanApplication);
+        loanApplicationRepository.saveAndFlush(loanApplication);
 
         CustomerLimit customerLimit = customerLimitRepository
-                .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+                .findByCustomer_IdAndDeletedDateIsNull(customer.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Customer belum memiliki limit"
+                ));
+
+        if (request.getLoanAmount().compareTo(customerLimit.getAvailableLimit()) > 0) {
+            throw new IllegalArgumentException(
+                    "Pinjaman melebihi limit yang tersedia"
+            );
+        }
+
+        customerLimit.setAvailableLimit(
+                customerLimit.getAvailableLimit().subtract(request.getLoanAmount())
+        );
+        customerLimitRepository.save(customerLimit);
 
         return new LoanApplicationResponse(
                 loanApplication,
@@ -294,8 +360,37 @@ public class LoanApplicationService {
         disbursement.setTransactionReference(
                 "DTRX-" + String.format("%010d", new Random().nextLong(10_000_000_000L))
         );
-        disbursement.setRekening(loanApplication.getRekening());
+        disbursement.setRekening(
+                rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
+                        .orElseThrow(() -> new EntityNotFoundException("Rekening tidak ditemukan"))
+        );
         loanApplicationDisbursementRepository.save(disbursement);
+
+        SecureRandom random = new SecureRandom();
+        LocalDate disbursementDate = LocalDate.now();
+
+        for (int i = 0; i < loanApplication.getTenorMonths(); i++) {
+            LoanInstallment loanInstallment = new LoanInstallment();
+            loanInstallment.setLoanApplication(loanApplication);
+            loanInstallment.setInstallmentNumber(
+                    "TRX-INS-" +
+                            disbursementDate.format(DateTimeFormatter.BASIC_ISO_DATE) +
+                            "-" +
+                            String.format("%010d", random.nextLong(10_000_000_000L))
+            );
+            loanInstallment.setInstallmentSequence(i + 1);
+            loanInstallment.setDueDate(disbursementDate.plusMonths(i + 1L));
+            loanInstallment.setInstallmentAmount(loanApplication.getInstallmentAmount());
+            loanInstallment.setStatus(InstallmentStatus.UNPAID);
+        }
+
+        notificationService.sendToCustomer(
+                loanApplication.getCustomer(),
+                "Pinjaman Berhasil Dicairkan",
+                "Pinjaman Anda telah berhasil dicairkan dan dana telah dikirimkan ke rekening Anda.",
+                "disbursement",
+                "pinjam100://disbursement/" + disbursement.getId()
+        );
 
         CustomerLimit customerLimit = customerLimitRepository
                 .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())

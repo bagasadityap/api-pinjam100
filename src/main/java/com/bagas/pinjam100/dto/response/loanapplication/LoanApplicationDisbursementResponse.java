@@ -38,7 +38,8 @@ public class LoanApplicationDisbursementResponse {
 
     public LoanApplicationDisbursementResponse(
             LoanApplication response,
-            CustomerLimit customerLimit
+            CustomerLimit customerLimit,
+            Rekening rekening
     ) {
         this.id = response.getId();
         this.applicationId = response.getApplicationId();
@@ -54,7 +55,7 @@ public class LoanApplicationDisbursementResponse {
         );
 
         this.rekening = new RekeningResponse(
-                response.getRekening()
+                rekening
         );
 
         if (response.getBranch() != null) {

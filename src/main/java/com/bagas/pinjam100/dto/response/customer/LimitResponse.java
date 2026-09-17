@@ -17,12 +17,14 @@ import java.util.UUID;
 public class LimitResponse {
     private UUID id;
     private BigDecimal creditLimit;
+    private BigDecimal availableLimit;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
 
     public LimitResponse(CustomerLimit customerLimit) {
         this.id = customerLimit.getId();
         this.creditLimit = customerLimit.getCreditLimit();
+        this.availableLimit = customerLimit.getAvailableLimit();
         this.createdDate = customerLimit.getCreatedDate();
         this.updatedDate = customerLimit.getUpdatedDate();
     }

@@ -75,6 +75,10 @@ public class JwtService {
                 .compact();
     }
 
+    public String getUsername(String token) {
+        return parse(token).getSubject();
+    }
+
     public String issueCustomerWithoutExpiry(Customer customer, Instant issuedAt) {
         return customerBuilder(customer, issuedAt).compact();
     }
