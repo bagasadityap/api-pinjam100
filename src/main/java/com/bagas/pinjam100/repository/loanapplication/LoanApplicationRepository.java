@@ -1,13 +1,9 @@
 package com.bagas.pinjam100.repository.loanapplication;
 
-import com.bagas.pinjam100.entity.Branch;
-import com.bagas.pinjam100.entity.customer.Customer;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplication;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,4 +19,7 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     );
 
     List<LoanApplication> findAllByStatusAndDeletedDateIsNull(LoanApplicationStatus loanApplicationStatus);
+
+    List<LoanApplication> findTop5ByDeletedDateIsNullOrderByCreatedDateDesc();
+    List<LoanApplication> findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(UUID branchId);
 }

@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface CustomerDetailRepository extends JpaRepository<CustomerDetail, UUID> {
     Optional<CustomerDetail> findByCustomer_IdAndDeletedDateIsNull(UUID customerId);
+    boolean existsByNationalIdAndDeletedDateIsNull(UUID customerId);
 }

@@ -47,7 +47,7 @@ public class SecurityConfig {
                         .frameOptions(frame -> frame.deny()))
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email").permitAll()
-                        .requestMatchers("/document", "/document/**", "/installment").authenticated()
+                        .requestMatchers("/document", "/document/**", "/installment", "/dashboard").authenticated()
                         .requestMatchers("/user", "/user/**", "/role", "/role/**", "/permission", "/permission/**", "/branch", "/branch/**", "/wilayah", "/wilayah/**", "/customer", "/customer/**", "/loan-application", "/loan-application/**", "/customer-limit", "/customer-limit/**").authenticated()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception

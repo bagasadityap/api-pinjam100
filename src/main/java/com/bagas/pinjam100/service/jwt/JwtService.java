@@ -69,6 +69,14 @@ public class JwtService {
                 .signWith(key);
     }
 
+    public String getRole(String token) {
+        return parse(token).get("role", String.class);
+    }
+
+    public String getBranch(String token) {
+        return parse(token).get("branch", String.class);
+    }
+
     public String issueCustomer(Customer customer, Instant issuedAt) {
         return customerBuilder(customer, issuedAt)
                 .expiration(Date.from(issuedAt.plus(ttl)))
