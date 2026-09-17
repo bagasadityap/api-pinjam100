@@ -10,6 +10,7 @@ import com.bagas.pinjam100.entity.otp.VerifyOtpRequest;
 import com.bagas.pinjam100.exception.AuthenticationException;
 import com.bagas.pinjam100.exception.ConflictException;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
+import com.bagas.pinjam100.repository.notification.CustomerDeviceRepository;
 import com.bagas.pinjam100.service.jwt.JwtService;
 import com.bagas.pinjam100.service.jwt.TokenBlacklistService;
 import com.bagas.pinjam100.service.notification.CustomerDeviceService;
@@ -36,6 +37,7 @@ public class CustomerAuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final OtpVerificationService otpVerificationService;
     private final CustomerDeviceService customerDeviceService;
+    private final CustomerDeviceRepository customerDeviceRepository;
 
     private static final String NOT_FOUND_MESSAGE = "Customer tidak ditemukan";
     private static final String FALSE_CREDENTIALS = "Nomor telepon atau password salah";
@@ -76,16 +78,14 @@ public class CustomerAuthService {
     }
 
     public ResponseEntity<Void> logout(String token) {
+        var jwt = jwtService.parse(token);
+        String phoneNumber = jwt.getSubject();
         Instant expiresAt = jwtService.getExpiration(token);
 
         Customer customer = customerRepository
-                .findByPhoneNumberAndDeletedDateIsNull(
-                        jwtService.parse(token).getSubject()
-                )
+                .findByPhoneNumberAndDeletedDateIsNull(phoneNumber)
                 .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                NOT_FOUND_MESSAGE
-                        )
+                        new EntityNotFoundException(NOT_FOUND_MESSAGE)
                 );
 
         customer.setLogoutDate(
@@ -93,10 +93,9 @@ public class CustomerAuthService {
         );
         customerRepository.save(customer);
 
-        tokenBlacklistService.revoke(
-                token,
-                expiresAt
-        );
+        customerDeviceRepository.deleteAllByCustomerId(customer.getId());
+
+        tokenBlacklistService.revoke(token, expiresAt);
 
         return ResponseEntity.noContent().build();
     }

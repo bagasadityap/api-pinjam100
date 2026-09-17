@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface CustomerDeviceRepository extends JpaRepository<CustomerDevice, UUID> {
     Optional<CustomerDevice> findByFcmToken(String fcmToken);
     List<CustomerDevice> findAllByCustomer(Customer customer);
+    void deleteAllByCustomerId(UUID customerId);
 }
