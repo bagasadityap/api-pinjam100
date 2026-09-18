@@ -48,6 +48,17 @@ jobs:
       - name: Grant execute permission for Maven Wrapper
         run: chmod +x mvnw
 
+      - name: Initialize test database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname pinjam100_test \
+            --command 'CREATE SCHEMA IF NOT EXISTS loan;'
+
       - name: Build and test
         env:
           SPRING_PROFILES_ACTIVE: test
