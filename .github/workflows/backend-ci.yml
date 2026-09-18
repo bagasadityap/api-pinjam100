@@ -31,6 +31,7 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/pinjam100_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+
       DB_SCHEMA: loan
 
     steps:
@@ -48,6 +49,8 @@ jobs:
         run: chmod +x mvnw
 
       - name: Build and test
+        env:
+          SPRING_PROFILES_ACTIVE: test
         run: ./mvnw clean verify
 
       - name: Build Docker image
