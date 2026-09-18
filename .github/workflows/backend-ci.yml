@@ -1,5 +1,8 @@
 name: Backend CI
 
+env:
+  APPLICATION_NAME: bagas.pinjam100
+
 on:
   push:
     branches:

@@ -93,8 +93,6 @@ public class CustomerAuthService {
         );
         customerRepository.save(customer);
 
-        customerDeviceRepository.deleteAllByCustomerId(customer.getId());
-
         tokenBlacklistService.revoke(token, expiresAt);
 
         return ResponseEntity.noContent().build();
