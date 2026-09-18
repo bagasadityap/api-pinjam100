@@ -31,8 +31,12 @@ jobs:
       DB_URL: jdbc:postgresql://localhost:5432/pinjam100_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-
       DB_SCHEMA: loan
+
+      # Test-only schema generation.
+      # Do not use this setting in production.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: loan
 
     steps:
       - name: Checkout source code
@@ -48,6 +52,18 @@ jobs:
       - name: Grant execute permission for Maven Wrapper
         run: chmod +x mvnw
 
+      - name: Wait for PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: |
+          until pg_isready \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname pinjam100_test; do
+            sleep 2
+          done
+
       - name: Initialize test database
         env:
           PGPASSWORD: postgres
@@ -62,7 +78,7 @@ jobs:
       - name: Build and test
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: ./mvnw clean verify
+        run: ./mvnw --batch-mode clean verify
 
       - name: Build Docker image
         run: docker build -t api-pinjam100:ci .
