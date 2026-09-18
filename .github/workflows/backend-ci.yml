@@ -10,7 +10,6 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
 
-    # Temporary PostgreSQL khusus CI
     services:
       postgres:
         image: postgres:16
@@ -18,54 +17,34 @@ jobs:
           POSTGRES_DB: pinjam100_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-
         ports:
           - 5432:5432
-
         options: >-
           --health-cmd="pg_isready -U postgres -d pinjam100_test"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
 
-    # Environment khusus CI
-    # Jangan gunakan credential production di sini
     env:
       APPLICATION_NAME: bagas.pinjam100
 
-      # PostgreSQL CI
       DB_URL: jdbc:postgresql://localhost:5432/pinjam100_test
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_SCHEMA: loan
 
-      # JWT - CI only
       JWT_SECRET: ci-test-secret-0123456789-abcdefghijklmnopqrstuvwxyz
-
-      # Application security - CI only
       DEMO_PASSWORD: ci-demo-password
       CRYPTO_KEY: ci-test-crypto-key-0123456789-abcdefghijklmnopqrstuvwxyz
-
-      # Flowkirim - CI only
       FLOWKIRIM_API_TOKEN: ci-test-token
       FLOWKIRIM_DEVICE_ID: ci-test-device
-
-      # Mail - CI only
       MAIL_USERNAME: test@example.com
       MAIL_PASSWORD: ci-test-password
 
     steps:
-
-      # ==========================================
-      # 1. Checkout
-      # ==========================================
       - name: Checkout source code
         uses: actions/checkout@v4
 
-
-      # ==========================================
-      # 2. Setup Java
-      # ==========================================
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -73,17 +52,9 @@ jobs:
           java-version: '21'
           cache: maven
 
-
-      # ==========================================
-      # 3. Make Maven Wrapper executable
-      # ==========================================
       - name: Grant execute permission for Maven Wrapper
         run: chmod +x mvnw
 
-
-      # ==========================================
-      # 4. Initialize PostgreSQL schema
-      # ==========================================
       - name: Initialize PostgreSQL schema
         env:
           PGPASSWORD: postgres
@@ -95,18 +66,12 @@ jobs:
             --dbname pinjam100_test \
             --command "CREATE SCHEMA IF NOT EXISTS loan;"
 
-
-      # ==========================================
-      # 5. Build & Test
-      # ==========================================
       - name: Build and test
         env:
           SPRING_PROFILES_ACTIVE: test
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+          SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: loan
         run: ./mvnw clean verify
 
-
-      # ==========================================
-      # 6. Build Docker image
-      # ==========================================
       - name: Build Docker image
         run: docker build -t api-pinjam100:ci .
