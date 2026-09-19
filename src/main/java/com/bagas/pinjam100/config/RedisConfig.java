@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.lettuce.core.resource.DefaultClientResources;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.cache.annotation.EnableCaching;
@@ -22,7 +23,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 
@@ -30,7 +30,6 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @EnableCaching
 public class RedisConfig {
-
     private final AppConfigProperties appConfigProp;
 
     @Bean
@@ -38,53 +37,66 @@ public class RedisConfig {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
         config.setHostName(appConfigProp.getRedis().getHost());
         config.setPort(appConfigProp.getRedis().getPort());
+        config.setUsername(appConfigProp.getRedis().getUsername());
+        config.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
 
-        if (StringUtils.hasText(appConfigProp.getRedis().getUsername())) {
-            config.setUsername(appConfigProp.getRedis().getUsername());
-        }
+        LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder builder =
+                LettucePoolingClientConfiguration.builder();
 
-        if (StringUtils.hasText(appConfigProp.getRedis().getPassword())) {
-            config.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
-        }
-
-        GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
-        poolConfig.setMaxTotal(appConfigProp.getRedis().getLettucePoolMaxActive());
-        poolConfig.setMaxIdle(appConfigProp.getRedis().getLettucePoolMaxIdle());
-        poolConfig.setMinIdle(appConfigProp.getRedis().getLettucePoolMinIdle());
-        poolConfig.setMaxWait(appConfigProp.getRedis().getLettucePoolMaxWait());
-
-        LettuceClientConfiguration clientConfiguration = LettucePoolingClientConfiguration.builder()
+        builder
+                .clientResources(DefaultClientResources.create())
                 .commandTimeout(appConfigProp.getRedis().getTimeout())
-                .poolConfig(poolConfig)
-                .build();
+                .poolConfig(new GenericObjectPoolConfig<>() {{
+                    setMaxTotal(appConfigProp.getRedis().getLettucePoolMaxActive());
+                    setMaxIdle(appConfigProp.getRedis().getLettucePoolMaxIdle());
+                    setMinIdle(appConfigProp.getRedis().getLettucePoolMinIdle());
+                    setMaxWait(appConfigProp.getRedis().getLettucePoolMaxWait());
+                }});
+
+        LettuceClientConfiguration clientConfiguration = builder.build();
 
         return new LettuceConnectionFactory(config, clientConfiguration);
     }
 
     @Bean
     public RedisCacheConfiguration redisCacheConfiguration() {
+
         ObjectMapper objectMapper = new ObjectMapper();
+
         objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        BasicPolymorphicTypeValidator validator = BasicPolymorphicTypeValidator.builder()
-                .allowIfSubType("com.bagas.pinjam100")
-                .allowIfBaseType(Object.class)
-                .build();
+        objectMapper.disable(
+                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
+        );
 
-        objectMapper.activateDefaultTyping(validator, ObjectMapper.DefaultTyping.NON_FINAL);
+        BasicPolymorphicTypeValidator validator =
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfSubType("com.binar_bc.mvc.test")
+                        .build();
 
-        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+        objectMapper.activateDefaultTyping(
+                validator,
+                ObjectMapper.DefaultTyping.NON_FINAL
+        );
 
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(serializer)
-                );
+        GenericJackson2JsonRedisSerializer serializer =
+                new GenericJackson2JsonRedisSerializer(objectMapper);
 
-        String prefix = normalizePrefix(appConfigProp.getRedis().getKeyPrefix());
+        RedisCacheConfiguration config =
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .entryTtl(Duration.ofHours(1))
+                        .serializeValuesWith(
+                                RedisSerializationContext.SerializationPair
+                                        .fromSerializer(serializer)
+                        );
+
+        String prefix =
+                normalizePrefix(appConfigProp.getRedis().getKeyPrefix());
+
         if (!prefix.isEmpty()) {
-            config = config.computePrefixWith(CacheKeyPrefix.prefixed(prefix));
+            config = config.computePrefixWith(
+                    CacheKeyPrefix.prefixed(prefix)
+            );
         }
 
         return config;
@@ -98,10 +110,17 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        StringRedisSerializer keySerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer();
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory connectionFactory
+    ) {
+        RedisTemplate<String, Object> template =
+                new RedisTemplate<>();
+
+        StringRedisSerializer keySerializer =
+                new StringRedisSerializer();
+
+        GenericJackson2JsonRedisSerializer valueSerializer =
+                new GenericJackson2JsonRedisSerializer();
 
         template.setConnectionFactory(connectionFactory);
 
@@ -112,6 +131,7 @@ public class RedisConfig {
         template.setHashValueSerializer(valueSerializer);
 
         template.afterPropertiesSet();
+
         return template;
     }
 }
