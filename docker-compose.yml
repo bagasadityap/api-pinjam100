@@ -1,8 +1,7 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Ganti blok 'build:' dengan 'image:' seperti di bawah ini:
+    image: ghcr.io/bagasadityap/api-pinjam100:development
     container_name: api-pinjam100
     restart: unless-stopped
 
