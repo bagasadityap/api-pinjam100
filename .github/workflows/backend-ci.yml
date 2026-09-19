@@ -122,7 +122,13 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         env:
+          # GitHub Actions token: used to download docker-compose.yml
           GH_TOKEN: ${{ github.token }}
+
+          # PAT: used by Docker to pull the private GHCR image
+          GHCR_USERNAME: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
           APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -144,6 +150,8 @@ jobs:
 
           envs: >-
             GH_TOKEN,
+            GHCR_USERNAME,
+            GHCR_TOKEN,
             APPLICATION_NAME,
             DB_USERNAME,
             DB_PASSWORD,
@@ -201,6 +209,11 @@ jobs:
             EOF
 
             cd "$CD_PATH"
+
+            echo "Logging in to GitHub Container Registry..."
+            printf '%s' "$GHCR_TOKEN" | sudo docker login ghcr.io \
+              --username "$GHCR_USERNAME" \
+              --password-stdin
 
             echo "Pulling latest image and updating containers..."
             sudo docker compose -f "$COMPOSE_FILE" pull api
