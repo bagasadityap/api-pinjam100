@@ -1,8 +1,6 @@
 services:
   api:
-    # Ganti blok 'build:' dengan 'image:' seperti di bawah ini:
     image: ghcr.io/bagasadityap/api-pinjam100:development
-    container_name: api-pinjam100
     restart: unless-stopped
 
     ports:
@@ -40,7 +38,6 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: api-pinjam100-postgres
     restart: unless-stopped
 
     environment:
@@ -62,7 +59,6 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: api-pinjam100-redis
     restart: unless-stopped
 
     ports:

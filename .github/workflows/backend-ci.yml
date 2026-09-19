@@ -210,13 +210,13 @@ jobs:
 
             cd "$CD_PATH"
 
-            echo "Logging in to GitHub Container Registry..."
-            printf '%s' "$GHCR_TOKEN" | sudo docker login ghcr.io \
-              --username "$GHCR_USERNAME" \
-              --password-stdin
-
-            echo "Pulling latest image and updating containers..."
+            echo "Pulling latest image..."
             sudo docker compose -f "$COMPOSE_FILE" pull api
+
+            echo "Removing any conflicting old containers if present..."
+            sudo docker rm -f api-pinjam100 api-pinjam100-postgres api-pinjam100-redis 2>/dev/null || true
+
+            echo "Starting updated containers..."
             sudo docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
             echo "======================================"
