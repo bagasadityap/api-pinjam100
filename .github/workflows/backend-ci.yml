@@ -94,6 +94,7 @@ jobs:
     name: Deploy to VPS
     needs: build-and-test
     runs-on: ubuntu-24.04
+    environment: deployment
 
     steps:
       - name: Deploy to VPS
@@ -104,12 +105,22 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/pinjam100
-
-            echo "Pulling latest API image..."
-            docker compose pull api
-
-            echo "Starting updated API..."
-            docker compose up -d api
-
+            
+            echo "Pulling latest Docker image..."
+            docker pull ghcr.io/bagasadityap/api-pinjam100:development
+            
+            echo "Stopping old container..."
+            docker stop api-pinjam100 || true
+            
+            echo "Removing old container..."
+            docker rm api-pinjam100 || true
+            
+            echo "Starting new container..."
+            docker run -d \
+              --name api-pinjam100 \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              ghcr.io/bagasadityap/api-pinjam100:development
+            
             echo "Deployment completed."
-            docker compose ps
+            docker ps
