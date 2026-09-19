@@ -85,4 +85,4 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker build -t ghcr.io/${{ github.bagasadityap }}/api-pinjam100:development .
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/api-pinjam100:development .
