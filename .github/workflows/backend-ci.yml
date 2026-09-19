@@ -116,8 +116,6 @@ jobs:
           DB_SCHEMA: loan
 
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
-          CRYPTO_KEY: ${{ secrets.CRYPTO_KEY }}
 
           FLOWKIRIM_API_TOKEN: ${{ secrets.FLOWKIRIM_API_TOKEN }}
           FLOWKIRIM_DEVICE_ID: ${{ secrets.FLOWKIRIM_DEVICE_ID }}
@@ -138,8 +136,6 @@ jobs:
             DB_PASSWORD,
             DB_SCHEMA,
             JWT_SECRET,
-            DEMO_PASSWORD,
-            CRYPTO_KEY,
             FLOWKIRIM_API_TOKEN,
             FLOWKIRIM_DEVICE_ID,
             MAIL_USERNAME,
@@ -178,8 +174,6 @@ jobs:
               -e DB_PASSWORD="$DB_PASSWORD" \
               -e DB_SCHEMA="$DB_SCHEMA" \
               -e JWT_SECRET="$JWT_SECRET" \
-              -e DEMO_PASSWORD="$DEMO_PASSWORD" \
-              -e CRYPTO_KEY="$CRYPTO_KEY" \
               -e FLOWKIRIM_API_TOKEN="$FLOWKIRIM_API_TOKEN" \
               -e FLOWKIRIM_DEVICE_ID="$FLOWKIRIM_DEVICE_ID" \
               -e MAIL_USERNAME="$MAIL_USERNAME" \
