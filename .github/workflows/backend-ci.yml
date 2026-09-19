@@ -132,7 +132,7 @@ jobs:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          REDIST_HOST: ${{ secrets.REDIST_HOST }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
           REDIS_POST: ${{ secrets.REDIS_POST }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         with:
@@ -152,7 +152,7 @@ jobs:
             MAIL_USERNAME,
             MAIL_PASSWORD,
             GOOGLE_APPLICATION_CREDENTIALS,
-            REDIST_HOST,
+            REDIS_HOST,
             REDIS_POST,
             REDIS_PASSWORD
 
@@ -185,7 +185,7 @@ jobs:
             FLOWKIRIM_DEVICE_ID=$FLOWKIRIM_DEVICE_ID
             MAIL_USERNAME=$MAIL_USERNAME
             MAIL_PASSWORD=$MAIL_PASSWORD
-            REDIS_HOST=$REDIST_HOST
+            REDIS_HOST=$REDIS_HOST
             REDIS_PORT=$REDIS_POST
             REDIS_PASSWORD=$REDIS_PASSWORD
             EOF
