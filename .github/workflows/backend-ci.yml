@@ -141,6 +141,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
           REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_USERNAME: ${{ secrets.REDIS_USERNAME }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -164,6 +165,7 @@ jobs:
             GOOGLE_APPLICATION_CREDENTIALS,
             REDIS_HOST,
             REDIS_PORT,
+            REDIS_USERNAME,
             REDIS_PASSWORD
 
           script: |
@@ -205,6 +207,7 @@ jobs:
             MAIL_PASSWORD=$MAIL_PASSWORD
             REDIS_HOST=$REDIS_HOST
             REDIS_PORT=$REDIS_PORT
+            REDIS_USERNAME=$REDIS_USERNAME
             REDIS_PASSWORD=$REDIS_PASSWORD
             EOF
             
