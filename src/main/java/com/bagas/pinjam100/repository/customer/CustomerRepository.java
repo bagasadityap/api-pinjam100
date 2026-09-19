@@ -29,7 +29,7 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             String email
     );
 
-    boolean existByNationalIdAndDeletedDateIsNull(
+    boolean existsByNationalIdAndDeletedDateIsNull(
             String nationalId
     );
 

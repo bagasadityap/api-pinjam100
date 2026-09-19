@@ -151,7 +151,7 @@ public class CustomerAuthService {
             );
         }
 
-        if (customerRepository.existByNationalIdAndDeletedDateIsNull(
+        if (customerRepository.existsByNationalIdAndDeletedDateIsNull(
                 request.getNationalId()
         )) {
             throw new ConflictException(
