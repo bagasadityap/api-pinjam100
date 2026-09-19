@@ -2,6 +2,8 @@ package com.bagas.pinjam100.service.auth;
 
 import com.bagas.pinjam100.dto.auth.AuthResponse;
 import com.bagas.pinjam100.dto.auth.LoginRequest;
+import com.bagas.pinjam100.dto.auth.RefreshTokenRequest;
+import com.bagas.pinjam100.entity.auth.UserRefreshToken;
 import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.exception.AuthenticationException;
 import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
@@ -25,36 +27,76 @@ import java.util.UUID;
 @Service
 @AllArgsConstructor
 public class AuthService {
+
     private JwtService jwtService;
     private PasswordEncoder passwordEncoder;
     private TokenBlacklistService tokenBlacklistService;
     private final UserRepository userRepository;
+    private final UserRefreshTokenService userRefreshTokenService;
+    private final AppUserDetailsService appUserDetailsService;
 
-    public ResponseEntity<AuthResponse> login(Optional<AppUser> found, LoginRequest request) {
-        if (found.isEmpty() || !passwordEncoder.matches(request.getPassword(), found.get().getPassword())) {
+    public ResponseEntity<AuthResponse> login(
+            Optional<AppUser> found,
+            LoginRequest request
+    ) {
+        if (found.isEmpty() ||
+                !passwordEncoder.matches(
+                        request.getPassword(),
+                        found.get().getPassword()
+                )) {
+
             throw new AuthenticationException(
                     "NIP atau password salah"
             );
         }
 
         AppUser user = found.get();
+
         if (user.getRole() == null) {
-            throw new AuthenticationException("User belum memiliki role");
-        }
-        if (!user.isEnabled()) {
-            throw new AuthenticationException("Status user tidak aktif, mohon menghungi administrator");
+            throw new AuthenticationException(
+                    "User belum memiliki role"
+            );
         }
 
-        String token = jwtService.issue(user, Instant.now());
+        if (!user.isEnabled()) {
+            throw new AuthenticationException(
+                    "Status user tidak aktif, mohon menghungi administrator"
+            );
+        }
+
+        Instant now = Instant.now();
+
+        String token = jwtService.issue(
+                user,
+                now
+        );
+
+        User userEntity = userRepository
+                .findByIdAndDeletedDateIsNull(
+                        user.getIdUser()
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "User tidak ditemukan"
+                        )
+                );
+
+        String refreshToken =
+                userRefreshTokenService.create(
+                        userEntity
+                );
 
         List<String> permissions = user.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(authority -> !authority.startsWith("ROLE_"))
+                .filter(authority ->
+                        !authority.startsWith("ROLE_")
+                )
                 .toList();
 
         AuthResponse response = new AuthResponse(
                 token,
+                refreshToken,
                 user.getIdentityNumber(),
                 user.getRole().getRoleName(),
                 permissions
@@ -63,25 +105,106 @@ public class AuthService {
         return ResponseEntity.ok(response);
     }
 
-    public ResponseEntity<Void> logout(String token) {
-        Instant expiresAt = jwtService.getExpiration(token);
-        tokenBlacklistService.revoke(token, expiresAt);
+    public ResponseEntity<Void> logout(
+            String token,
+            String refreshToken
+    ) {
+        Instant expiresAt =
+                jwtService.getExpiration(token);
+
+        tokenBlacklistService.revoke(
+                token,
+                expiresAt
+        );
+
+        userRefreshTokenService.revoke(
+                refreshToken
+        );
 
         return ResponseEntity.noContent().build();
     }
 
     public User getCurrentUser() {
         Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
+                SecurityContextHolder.getContext()
+                        .getAuthentication();
 
         if (authentication == null ||
-                !(authentication.getPrincipal() instanceof AppUser appUser)) {
-            throw new AuthenticationException("User belum terautentikasi");
+                !(authentication.getPrincipal()
+                        instanceof AppUser appUser)) {
+
+            throw new AuthenticationException(
+                    "User belum terautentikasi"
+            );
         }
 
-        return userRepository.findByIdAndDeletedDateIsNull(appUser.getIdUser())
+        return userRepository
+                .findByIdAndDeletedDateIsNull(
+                        appUser.getIdUser()
+                )
                 .orElseThrow(() ->
-                        new EntityNotFoundException("User tidak ditemukan")
+                        new EntityNotFoundException(
+                                "User tidak ditemukan"
+                        )
                 );
+    }
+
+    public ResponseEntity<AuthResponse> refreshToken(
+            RefreshTokenRequest request
+    ) {
+        UserRefreshToken refreshToken =
+                userRefreshTokenService.validate(
+                        request.getRefreshToken()
+                );
+
+        User user = refreshToken.getUser();
+
+        Optional<AppUser> found =
+                appUserDetailsService.findUser(
+                        user.getIdentityNumber()
+                );
+
+        if (found.isEmpty()) {
+            throw new AuthenticationException(
+                    "User tidak ditemukan"
+            );
+        }
+
+        AppUser appUser = found.get();
+
+        if (appUser.getRole() == null) {
+            throw new AuthenticationException(
+                    "User belum memiliki role"
+            );
+        }
+
+        if (!appUser.isEnabled()) {
+            throw new AuthenticationException(
+                    "Status user tidak aktif, mohon menghungi administrator"
+            );
+        }
+
+        String token = jwtService.issue(
+                appUser,
+                Instant.now()
+        );
+
+        List<String> permissions = appUser.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(authority ->
+                        !authority.startsWith("ROLE_")
+                )
+                .toList();
+
+        AuthResponse response = new AuthResponse(
+                token,
+                request.getRefreshToken(),
+                appUser.getIdentityNumber(),
+                appUser.getRole().getRoleName(),
+                permissions
+        );
+
+        return ResponseEntity.ok(response);
     }
 }

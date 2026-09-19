@@ -23,6 +23,8 @@ public class Customer {
     private UUID id;
     @Column(nullable = false, unique = true)
     private String customerNumber;
+    @Column(name = "national_id", unique = true, nullable = false)
+    private String nationalId;
     @Column(nullable = false)
     private String fullName;
     @Column(nullable = false)

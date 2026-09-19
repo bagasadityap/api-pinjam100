@@ -55,12 +55,24 @@ public class CustomerAuthController {
         return customerAuthService.resendOtp(request);
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<BaseResponse<CustomerAuthResponse>> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        return customerAuthService.refreshToken(request);
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @RequestHeader("Authorization") String authorization
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody LogoutRequest request
     ) {
         String token = authorization.substring(7);
-        return customerAuthService.logout(token);
+
+        return customerAuthService.logout(
+                token,
+                request.getRefreshToken()
+        );
     }
 
     @PostMapping("/change-password")

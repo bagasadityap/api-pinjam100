@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 public class CustomerRequest {
     private String fullName;
+    private String nationalId;
     private String email;
     private String phoneNumber;
     private String password;

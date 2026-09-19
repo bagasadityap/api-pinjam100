@@ -100,6 +100,7 @@ public class JwtService {
                 .claim("type", "CUSTOMER")
                 .claim("idCustomer", customer.getId())
                 .claim("customerNumber", customer.getCustomerNumber())
+                .claim("nationalId", customer.getNationalId())
                 .claim("fullName", customer.getFullName())
                 .claim("email", customer.getEmail())
                 .claim("phoneNumber", customer.getPhoneNumber())

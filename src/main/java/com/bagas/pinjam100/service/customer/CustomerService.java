@@ -184,7 +184,6 @@ public class CustomerService {
         CustomerDetail detail = new CustomerDetail();
 
         detail.setCustomer(customer);
-        detail.setNationalId(request.getNationalId());
         detail.setBirthDate(LocalDate.parse(request.getBirthDate()));
         detail.setPlaceOfBirth(request.getPlaceOfBirth());
         detail.setGender(request.getGender());
@@ -210,7 +209,6 @@ public class CustomerService {
             customer.setDetail(detail);
         }
 
-        detail.setNationalId(request.getNationalId());
         detail.setBirthDate(request.getBirthDate());
         detail.setPlaceOfBirth(request.getPlaceOfBirth());
         detail.setGender(request.getGender());

@@ -19,8 +19,6 @@ public class CustomerDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    @Column(nullable = false, unique = true)
-    private String nationalId;
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
     @Column(name = "place_of_birth", nullable = false)

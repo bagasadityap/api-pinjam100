@@ -17,6 +17,7 @@ import java.util.UUID;
 public class CustomerDetailResponse {
     private UUID id;
     private String customerNumber;
+    private String nationalId;
     private String fullName;
     private String email;
     private String phoneNumber;
@@ -40,6 +41,7 @@ public class CustomerDetailResponse {
     ) {
         this.id = customer.getId();
         this.customerNumber = customer.getCustomerNumber();
+        this.nationalId = customer.getNationalId();
         this.fullName = customer.getFullName();
         this.email = customer.getEmail();
         this.phoneNumber = customer.getPhoneNumber();
