@@ -38,6 +38,8 @@ services:
 
   postgres:
     image: postgres:17
+    ports:
+      - "5432:5432"
     restart: unless-stopped
 
     environment:
