@@ -10,7 +10,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod
 
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pinjam100
-      SPRING_DATASOURCE_USERNAME: pinjam100
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
 
       SPRING_DATA_REDIS_HOST: redis
@@ -42,17 +42,14 @@ services:
 
     environment:
       POSTGRES_DB: pinjam100
-      POSTGRES_USER: pinjam100
+      POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
-    ports:
-      - "5432:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pinjam100 -d pinjam100"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d pinjam100"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,9 +57,6 @@ services:
   redis:
     image: redis:alpine
     restart: unless-stopped
-
-    ports:
-      - "6379:6379"
 
     volumes:
       - redis_data:/data

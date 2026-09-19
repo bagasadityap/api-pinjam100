@@ -168,30 +168,30 @@ jobs:
 
           script: |
             set -euo pipefail
-
+            
             echo "======================================"
             echo "Deploying api-pinjam100 Stack via Docker Compose"
             echo "======================================"
-
+            
             CD_PATH="/opt/api-pinjam100"
             SECRET_DIR="$CD_PATH/secrets"
             SECRET_FILE="$SECRET_DIR/firebase-credentials.json"
             COMPOSE_FILE="$CD_PATH/docker-compose.yml"
-
+            
             sudo mkdir -p "$CD_PATH" "$SECRET_DIR"
-
+            
             echo "Downloading latest docker-compose.yml..."
             sudo curl --fail -sSL \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "Accept: application/vnd.github.raw+json" \
               -o "$COMPOSE_FILE" \
               "https://api.github.com/repos/${{ github.repository }}/contents/docker-compose.yml?ref=${{ github.sha }}"
-
+            
             echo "Writing Firebase credentials..."
             printf '%s' "$GOOGLE_APPLICATION_CREDENTIALS" | sudo tee "$SECRET_FILE.tmp" > /dev/null
             sudo chmod 600 "$SECRET_FILE.tmp"
             sudo mv -f "$SECRET_FILE.tmp" "$SECRET_FILE"
-
+            
             echo "Writing .env file..."
             cat <<EOF | sudo tee "$CD_PATH/.env" > /dev/null
             APPLICATION_NAME=$APPLICATION_NAME
@@ -207,23 +207,34 @@ jobs:
             REDIS_PORT=$REDIS_PORT
             REDIS_PASSWORD=$REDIS_PASSWORD
             EOF
-
+            
             cd "$CD_PATH"
-
+            
             echo "Pulling latest image..."
             sudo docker compose -f "$COMPOSE_FILE" pull api
-
+            
             echo "Removing any conflicting old containers if present..."
             sudo docker rm -f api-pinjam100 api-pinjam100-postgres api-pinjam100-redis 2>/dev/null || true
-
+            
             echo "Starting updated containers..."
             sudo docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
-
+            
+            echo "======================================"
+            echo "Ensuring 'loan' Schema Exists"
+            echo "======================================"
+            echo "Waiting for PostgreSQL container to be healthy..."
+            until [ "$(sudo docker inspect --format='{{json .State.Health.Status}}' $(sudo docker compose -f "$COMPOSE_FILE" ps -q postgres))" = '"healthy"' ]; do
+              sleep 2
+            done
+            
+            POSTGRES_CONTAINER=$(sudo docker compose -f "$COMPOSE_FILE" ps -q postgres)
+            sudo docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USERNAME" -d pinjam100 -c "CREATE SCHEMA IF NOT EXISTS loan;"
+            
             echo "======================================"
             echo "Container Status"
             echo "======================================"
             sudo docker compose -f "$COMPOSE_FILE" ps
-
+            
             echo "======================================"
             echo "Application Logs"
             echo "======================================"
