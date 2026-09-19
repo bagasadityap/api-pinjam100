@@ -35,3 +35,4 @@ build/
 .env
 
 /secrets
+secrets/firebase-credentials.json

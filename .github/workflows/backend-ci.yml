@@ -29,6 +29,17 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+      # Menambahkan service Redis untuk pengujian jika dibutuhkan
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     env:
       APPLICATION_NAME: bagas.pinjam100
 
@@ -37,6 +48,10 @@ jobs:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_SCHEMA: loan
+
+      # Redis khusus CI
+      SPRING_DATA_REDIS_HOST: localhost
+      SPRING_DATA_REDIS_PORT: 6379
 
       # Test secrets
       JWT_SECRET: ci-test-secret-0123456789-abcdefghijklmnopqrstuvwxyz
@@ -108,21 +123,15 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         env:
-          APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
-
-          DB_URL: jdbc:postgresql://localhost:5432/pinjam100
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_SCHEMA: loan
-
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-
+          FLOWKIRIM_BASE_URL: ${{ secrets.FLOWKIRIM_BASE_URL }}
           FLOWKIRIM_API_TOKEN: ${{ secrets.FLOWKIRIM_API_TOKEN }}
           FLOWKIRIM_DEVICE_ID: ${{ secrets.FLOWKIRIM_DEVICE_ID }}
-
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }} # Personal Access Token untuk docker login di VPS
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
@@ -130,74 +139,54 @@ jobs:
           passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
 
           envs: >-
-            APPLICATION_NAME,
-            DB_URL,
-            DB_USERNAME,
-            DB_PASSWORD,
-            DB_SCHEMA,
+            POSTGRES_PASSWORD,
             JWT_SECRET,
+            FLOWKIRIM_BASE_URL,
             FLOWKIRIM_API_TOKEN,
             FLOWKIRIM_DEVICE_ID,
             MAIL_USERNAME,
-            MAIL_PASSWORD
+            MAIL_PASSWORD,
+            FIREBASE_CREDENTIALS,
+            GHCR_PAT
 
           script: |
             set -e
 
             echo "======================================"
-            echo "Deploying Pinjam100 Backend"
+            echo "Deploying Pinjam100 Stack via Docker Compose"
             echo "======================================"
 
-            cd /opt/pinjam100
+            CD_PATH="/opt/pinjam100"
+            mkdir -p $CD_PATH/secrets
+            cd $CD_PATH
 
-            echo "Pulling latest Docker image..."
+            echo "Writing Firebase credentials..."
+            echo "$FIREBASE_CREDENTIALS" > ./secrets/firebase-credentials.json
 
-            docker pull ghcr.io/bagasadityap/api-pinjam100:development
+            echo "Writing .env file..."
+            cat <<EOF > .env
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            JWT_SECRET=$JWT_SECRET
+            FLOWKIRIM_BASE_URL=$FLOWKIRIM_BASE_URL
+            FLOWKIRIM_API_TOKEN=$FLOWKIRIM_API_TOKEN
+            FLOWKIRIM_DEVICE_ID=$FLOWKIRIM_DEVICE_ID
+            MAIL_USERNAME=$MAIL_USERNAME
+            MAIL_PASSWORD=$MAIL_PASSWORD
+            EOF
 
-            echo "Stopping old container..."
+            echo "Logging in to GHCR..."
+            echo "$GHCR_PAT" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-            docker stop api-pinjam100 || true
-
-            echo "Removing old container..."
-
-            docker rm api-pinjam100 || true
-
-            echo "Starting new container..."
-
-            docker run -d \
-              --name api-pinjam100 \
-              --restart unless-stopped \
-              --network host \
-              -e APPLICATION_NAME="$APPLICATION_NAME" \
-              -e DB_URL="$DB_URL" \
-              -e DB_USERNAME="$DB_USERNAME" \
-              -e DB_PASSWORD="$DB_PASSWORD" \
-              -e DB_SCHEMA="$DB_SCHEMA" \
-              -e JWT_SECRET="$JWT_SECRET" \
-              -e FLOWKIRIM_API_TOKEN="$FLOWKIRIM_API_TOKEN" \
-              -e FLOWKIRIM_DEVICE_ID="$FLOWKIRIM_DEVICE_ID" \
-              -e MAIL_USERNAME="$MAIL_USERNAME" \
-              -e MAIL_PASSWORD="$MAIL_PASSWORD" \
-              -e SPRING_PROFILES_ACTIVE="production" \
-              ghcr.io/bagasadityap/api-pinjam100:development
-
-            echo "Waiting for application to start..."
-
-            sleep 10
+            echo "Pulling latest image and updating containers..."
+            docker compose pull api
+            docker compose up -d --remove-orphans
 
             echo "======================================"
-            echo "Container status"
+            echo "Container Status"
             echo "======================================"
-
-            docker ps \
-              --filter "name=api-pinjam100"
+            docker compose ps
 
             echo "======================================"
-            echo "Application logs"
+            echo "Application Logs"
             echo "======================================"
-
-            docker logs --tail 100 api-pinjam100
-
-            echo "======================================"
-            echo "Deployment completed"
-            echo "======================================"
+            docker compose logs --tail=50 api

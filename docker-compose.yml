@@ -16,6 +16,10 @@ services:
       SPRING_DATASOURCE_USERNAME: pinjam100
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
 
+      # Konfigurasi Redis untuk Spring Boot (sesuaikan jika memakai Spring Data Redis)
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
       JWT_SECRET: ${JWT_SECRET}
 
       GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-credentials.json
@@ -33,6 +37,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
     image: postgres:17
@@ -56,5 +62,18 @@ services:
       timeout: 5s
       retries: 5
 
+  # Service Redis Baru
+  redis:
+    image: redis:alpine
+    container_name: pinjam100-redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data: # Volume khusus untuk data Redis
