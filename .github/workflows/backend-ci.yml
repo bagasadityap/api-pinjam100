@@ -133,7 +133,7 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_POST: ${{ secrets.REDIS_POST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -153,21 +153,27 @@ jobs:
             MAIL_PASSWORD,
             GOOGLE_APPLICATION_CREDENTIALS,
             REDIS_HOST,
-            REDIS_POST,
+            REDIS_PORT,
             REDIS_PASSWORD
 
           script: |
-            set -e
+            set -euo pipefail
 
             echo "======================================"
-            echo "Deploying Pinjam100 Stack via Docker Compose"
+            echo "Deploying api-pinjam100 Stack via Docker Compose"
             echo "======================================"
 
-            CD_PATH="/opt/pinjam100"
+            CD_PATH="/opt/api-pinjam100"
             SECRET_DIR="$CD_PATH/secrets"
             SECRET_FILE="$SECRET_DIR/firebase-credentials.json"
+            COMPOSE_FILE="$CD_PATH/docker-compose.yml"
 
-            sudo mkdir -p "$SECRET_DIR"
+            sudo mkdir -p "$CD_PATH" "$SECRET_DIR"
+
+            echo "Downloading latest docker-compose.yml..."
+            sudo curl --fail -sSL \
+              -o "$COMPOSE_FILE" \
+              "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/docker-compose.yml"
 
             echo "Writing Firebase credentials..."
             printf '%s' "$GOOGLE_APPLICATION_CREDENTIALS" | sudo tee "$SECRET_FILE.tmp" > /dev/null
@@ -186,22 +192,22 @@ jobs:
             MAIL_USERNAME=$MAIL_USERNAME
             MAIL_PASSWORD=$MAIL_PASSWORD
             REDIS_HOST=$REDIS_HOST
-            REDIS_PORT=$REDIS_POST
+            REDIS_PORT=$REDIS_PORT
             REDIS_PASSWORD=$REDIS_PASSWORD
             EOF
 
-            cd $CD_PATH
+            cd "$CD_PATH"
 
             echo "Pulling latest image and updating containers..."
-            sudo docker compose pull api
-            sudo docker compose up -d --remove-orphans
+            sudo docker compose -f "$COMPOSE_FILE" pull api
+            sudo docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
             echo "======================================"
             echo "Container Status"
             echo "======================================"
-            sudo docker compose ps
+            sudo docker compose -f "$COMPOSE_FILE" ps
 
             echo "======================================"
             echo "Application Logs"
             echo "======================================"
-            sudo docker compose logs --tail=50 api
+            sudo docker compose -f "$COMPOSE_FILE" logs --tail=50 api

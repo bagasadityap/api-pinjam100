@@ -16,7 +16,6 @@ services:
       SPRING_DATASOURCE_USERNAME: pinjam100
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
 
-      # Konfigurasi Redis untuk Spring Boot (sesuaikan jika memakai Spring Data Redis)
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
 
@@ -42,7 +41,7 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: pinjam100-postgres
+    container_name: api-pinjam100-postgres
     restart: unless-stopped
 
     environment:
@@ -62,10 +61,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Service Redis Baru
   redis:
     image: redis:alpine
-    container_name: pinjam100-redis
+    container_name: api-pinjam100-redis
     restart: unless-stopped
 
     ports:
@@ -76,4 +74,4 @@ services:
 
 volumes:
   postgres_data:
-  redis_data: # Volume khusus untuk data Redis
+  redis_data:
