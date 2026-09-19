@@ -32,7 +32,7 @@ public class Customer {
     @Column(nullable = false)
     private String password;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "varchar(50) default 'PENDING_OTP_VERIFICATION'")
+    @Column(nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING_OTP_VERIFICATION;
     @Column(name = "profile_completed", nullable = false)
     private boolean profileCompleted;

@@ -1,0 +1,60 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-pinjam100
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pinjam100
+      SPRING_DATASOURCE_USERNAME: pinjam100
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-credentials.json
+
+      FLOWKIRIM_BASE_URL: ${FLOWKIRIM_BASE_URL}
+      FLOWKIRIM_API_TOKEN: ${FLOWKIRIM_API_TOKEN}
+      FLOWKIRIM_DEVICE_ID: ${FLOWKIRIM_DEVICE_ID}
+
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+
+    volumes:
+      - ./secrets/firebase-credentials.json:/app/secrets/firebase-credentials.json:ro
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    container_name: pinjam100-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: pinjam100
+      POSTGRES_USER: pinjam100
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pinjam100 -d pinjam100"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
