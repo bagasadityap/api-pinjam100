@@ -16,6 +16,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -38,12 +39,10 @@ public class RedisConfig {
         config.setHostName(appConfigProp.getRedis().getHost());
         config.setPort(appConfigProp.getRedis().getPort());
 
-        // Handling username (hanya set jika tidak kosong)
         if (StringUtils.hasText(appConfigProp.getRedis().getUsername())) {
             config.setUsername(appConfigProp.getRedis().getUsername());
         }
 
-        // Handling password
         if (StringUtils.hasText(appConfigProp.getRedis().getPassword())) {
             config.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
         }

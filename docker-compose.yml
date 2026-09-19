@@ -15,6 +15,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_USERNAME: ${REDIS_USERNAME}
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
 
       JWT_SECRET: ${JWT_SECRET}
@@ -61,22 +62,31 @@ services:
     image: redis:alpine
     restart: unless-stopped
     command: >
-      sh -c 'if [ -n "$REDIS_PASSWORD" ]; then
-        exec redis-server --requirepass "$REDIS_PASSWORD";
-      else
-        exec redis-server;
-      fi'
+      sh -c '
+        if [ -n "$REDIS_USERNAME" ] && [ -n "$REDIS_PASSWORD" ]; then
+          exec redis-server --user "$REDIS_USERNAME" on ">$REDIS_PASSWORD" ~* +@all --user default off;
+        elif [ -n "$REDIS_PASSWORD" ]; then
+          exec redis-server --requirepass "$REDIS_PASSWORD";
+        else
+          exec redis-server;
+        fi
+      '
     environment:
+      REDIS_USERNAME: ${REDIS_USERNAME}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     healthcheck:
       test: >
-        sh -c 'if [ -n "$REDIS_PASSWORD" ]; then
-          redis-cli -a "$REDIS_PASSWORD" ping | grep PONG;
-        else
-          redis-cli ping | grep PONG;
-        fi'
+        sh -c '
+          if [ -n "$REDIS_USERNAME" ] && [ -n "$REDIS_PASSWORD" ]; then
+            redis-cli --user "$REDIS_USERNAME" -a "$REDIS_PASSWORD" ping | grep PONG;
+          elif [ -n "$REDIS_PASSWORD" ]; then
+            redis-cli -a "$REDIS_PASSWORD" ping | grep PONG;
+          else
+            redis-cli ping | grep PONG;
+          fi
+        '
       interval: 10s
       timeout: 5s
       retries: 5
