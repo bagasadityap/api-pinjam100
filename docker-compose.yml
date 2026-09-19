@@ -63,7 +63,7 @@ services:
     restart: unless-stopped
     command: >
       sh -c '
-        if [ -n "$REDIS_USERNAME" ] && [ -n "$REDIS_PASSWORD" ]; then
+        if [ -n "$REDIS_USERNAME" ] && [ "$REDIS_USERNAME" != "default" ] && [ -n "$REDIS_PASSWORD" ]; then
           exec redis-server --user "$REDIS_USERNAME" on ">$REDIS_PASSWORD" ~* +@all --user default off;
         elif [ -n "$REDIS_PASSWORD" ]; then
           exec redis-server --requirepass "$REDIS_PASSWORD";
@@ -79,7 +79,7 @@ services:
     healthcheck:
       test: >
         sh -c '
-          if [ -n "$REDIS_USERNAME" ] && [ -n "$REDIS_PASSWORD" ]; then
+          if [ -n "$REDIS_USERNAME" ] && [ "$REDIS_USERNAME" != "default" ] && [ -n "$REDIS_PASSWORD" ]; then
             redis-cli --user "$REDIS_USERNAME" -a "$REDIS_PASSWORD" ping | grep PONG;
           elif [ -n "$REDIS_PASSWORD" ]; then
             redis-cli -a "$REDIS_PASSWORD" ping | grep PONG;
