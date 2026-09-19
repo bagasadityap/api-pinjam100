@@ -1,60 +1,132 @@
-services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: api-pinjam100
-    restart: unless-stopped
+name: Backend CI/CD
 
-    ports:
-      - "8080:8080"
+on:
+  push:
+    branches:
+      - development
 
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
+permissions:
+  contents: read
+  packages: write
 
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pinjam100
-      SPRING_DATASOURCE_USERNAME: pinjam100
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-24.04
 
-      JWT_SECRET: ${JWT_SECRET}
-
-      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-credentials.json
-
-      FLOWKIRIM_BASE_URL: ${FLOWKIRIM_BASE_URL}
-      FLOWKIRIM_API_TOKEN: ${FLOWKIRIM_API_TOKEN}
-      FLOWKIRIM_DEVICE_ID: ${FLOWKIRIM_DEVICE_ID}
-
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-
-    volumes:
-      - ./secrets/firebase-credentials.json:/app/secrets/firebase-credentials.json:ro
-
-    depends_on:
+    services:
       postgres:
-        condition: service_healthy
+        image: postgres:16
+        env:
+          POSTGRES_DB: pinjam100_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d pinjam100_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
-  postgres:
-    image: postgres:17
-    container_name: pinjam100-postgres
-    restart: unless-stopped
+    env:
+      APPLICATION_NAME: bagas.pinjam100
 
-    environment:
-      POSTGRES_DB: pinjam100
-      POSTGRES_USER: pinjam100
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_URL: jdbc:postgresql://localhost:5432/pinjam100_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_SCHEMA: loan
 
-    ports:
-      - "5432:5432"
+      JWT_SECRET: ci-test-secret-0123456789-abcdefghijklmnopqrstuvwxyz
+      DEMO_PASSWORD: ci-demo-password
+      CRYPTO_KEY: ci-test-crypto-key-0123456789-abcdefghijklmnopqrstuvwxyz
+      FLOWKIRIM_API_TOKEN: ci-test-token
+      FLOWKIRIM_DEVICE_ID: ci-test-device
+      MAIL_USERNAME: test@example.com
+      MAIL_PASSWORD: ci-test-password
 
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pinjam100 -d pinjam100"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
 
-volumes:
-  postgres_data:
+      - name: Grant execute permission for Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Initialize PostgreSQL schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname pinjam100_test \
+            --command "CREATE SCHEMA IF NOT EXISTS loan;"
+
+      - name: Build and test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+          SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: loan
+        run: ./mvnw clean verify
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/api-pinjam100:development .
+
+      - name: Push Docker image
+        run: docker push ghcr.io/${{ github.repository_owner }}/api-pinjam100:development
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    environment: deployment
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+          script: |
+            set -e
+            cd /opt/pinjam100
+
+            echo "Pulling latest Docker image..."
+            docker pull ghcr.io/bagasadityap/api-pinjam100:development
+
+            echo "Stopping old container..."
+            docker stop api-pinjam100 || true
+
+            echo "Removing old container..."
+            docker rm api-pinjam100 || true
+
+            echo "Starting new container..."
+            docker run -d \
+              --name api-pinjam100 \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              --add-host host.docker.internal:host-gateway \
+              -e DB_URL="jdbc:postgresql://host.docker.internal:5432/pinjam100" \
+              -e DB_USERNAME="postgres" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              ghcr.io/bagasadityap/api-pinjam100:development
+
+            echo "Deployment completed."
+            docker ps
