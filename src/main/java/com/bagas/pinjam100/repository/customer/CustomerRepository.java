@@ -29,6 +29,10 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             String email
     );
 
+    boolean existByNationalIdAndDeletedDateIsNull(
+            String nationalId
+    );
+
     Optional<Customer> findByEmail(String email);
 
     List<Customer> findByVerificationStatus(

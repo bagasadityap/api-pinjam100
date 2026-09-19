@@ -151,6 +151,14 @@ public class CustomerAuthService {
             );
         }
 
+        if (customerRepository.existByNationalIdAndDeletedDateIsNull(
+                request.getNationalId()
+        )) {
+            throw new ConflictException(
+                    "NIK sudah terdaftar"
+            );
+        }
+
         PendingCustomerRegistration registration =
                 new PendingCustomerRegistration(
                         request.getFullName(),
