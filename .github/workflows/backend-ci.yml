@@ -29,7 +29,6 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-      # Menambahkan service Redis untuk pengujian jika dibutuhkan
       redis:
         image: redis:alpine
         ports:
@@ -123,15 +122,19 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           FLOWKIRIM_BASE_URL: ${{ secrets.FLOWKIRIM_BASE_URL }}
           FLOWKIRIM_API_TOKEN: ${{ secrets.FLOWKIRIM_API_TOKEN }}
           FLOWKIRIM_DEVICE_ID: ${{ secrets.FLOWKIRIM_DEVICE_ID }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }} # Personal Access Token untuk docker login di VPS
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          REDIST_HOST: ${{ secrets.REDIST_HOST }}
+          REDIS_POST: ${{ secrets.REDIS_POST }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
@@ -139,15 +142,19 @@ jobs:
           passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
 
           envs: >-
-            POSTGRES_PASSWORD,
+            APPLICATION_NAME,
+            DB_USERNAME,
+            DB_PASSWORD,
             JWT_SECRET,
             FLOWKIRIM_BASE_URL,
             FLOWKIRIM_API_TOKEN,
             FLOWKIRIM_DEVICE_ID,
             MAIL_USERNAME,
             MAIL_PASSWORD,
-            FIREBASE_CREDENTIALS,
-            GHCR_PAT
+            GOOGLE_APPLICATION_CREDENTIALS,
+            REDIST_HOST,
+            REDIS_POST,
+            REDIS_PASSWORD
 
           script: |
             set -e
@@ -157,36 +164,44 @@ jobs:
             echo "======================================"
 
             CD_PATH="/opt/pinjam100"
-            mkdir -p $CD_PATH/secrets
-            cd $CD_PATH
+            SECRET_DIR="$CD_PATH/secrets"
+            SECRET_FILE="$SECRET_DIR/firebase-credentials.json"
+
+            sudo mkdir -p "$SECRET_DIR"
 
             echo "Writing Firebase credentials..."
-            echo "$FIREBASE_CREDENTIALS" > ./secrets/firebase-credentials.json
+            printf '%s' "$GOOGLE_APPLICATION_CREDENTIALS" | sudo tee "$SECRET_FILE.tmp" > /dev/null
+            sudo chmod 600 "$SECRET_FILE.tmp"
+            sudo mv -f "$SECRET_FILE.tmp" "$SECRET_FILE"
 
             echo "Writing .env file..."
-            cat <<EOF > .env
-            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            cat <<EOF | sudo tee "$CD_PATH/.env" > /dev/null
+            APPLICATION_NAME=$APPLICATION_NAME
+            POSTGRES_PASSWORD=$DB_PASSWORD
+            DB_USERNAME=$DB_USERNAME
             JWT_SECRET=$JWT_SECRET
             FLOWKIRIM_BASE_URL=$FLOWKIRIM_BASE_URL
             FLOWKIRIM_API_TOKEN=$FLOWKIRIM_API_TOKEN
             FLOWKIRIM_DEVICE_ID=$FLOWKIRIM_DEVICE_ID
             MAIL_USERNAME=$MAIL_USERNAME
             MAIL_PASSWORD=$MAIL_PASSWORD
+            REDIS_HOST=$REDIST_HOST
+            REDIS_PORT=$REDIS_POST
+            REDIS_PASSWORD=$REDIS_PASSWORD
             EOF
 
-            echo "Logging in to GHCR..."
-            echo "$GHCR_PAT" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+            cd $CD_PATH
 
             echo "Pulling latest image and updating containers..."
-            docker compose pull api
-            docker compose up -d --remove-orphans
+            sudo docker compose pull api
+            sudo docker compose up -d --remove-orphans
 
             echo "======================================"
             echo "Container Status"
             echo "======================================"
-            docker compose ps
+            sudo docker compose ps
 
             echo "======================================"
             echo "Application Logs"
             echo "======================================"
-            docker compose logs --tail=50 api
+            sudo docker compose logs --tail=50 api
