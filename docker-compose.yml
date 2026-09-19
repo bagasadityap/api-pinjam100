@@ -15,6 +15,7 @@ services:
 
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
 
       JWT_SECRET: ${JWT_SECRET}
 
@@ -34,7 +35,7 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   postgres:
     image: postgres:17
@@ -59,9 +60,26 @@ services:
   redis:
     image: redis:alpine
     restart: unless-stopped
-
+    command: >
+      sh -c 'if [ -n "$REDIS_PASSWORD" ]; then
+        exec redis-server --requirepass "$REDIS_PASSWORD";
+      else
+        exec redis-server;
+      fi'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: >
+        sh -c 'if [ -n "$REDIS_PASSWORD" ]; then
+          redis-cli -a "$REDIS_PASSWORD" ping | grep PONG;
+        else
+          redis-cli ping | grep PONG;
+        fi'
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
