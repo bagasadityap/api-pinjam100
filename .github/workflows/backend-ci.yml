@@ -122,6 +122,7 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         env:
+          GH_TOKEN: ${{ github.token }}
           APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -142,6 +143,7 @@ jobs:
           passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
 
           envs: >-
+            GH_TOKEN,
             APPLICATION_NAME,
             DB_USERNAME,
             DB_PASSWORD,
@@ -172,8 +174,10 @@ jobs:
 
             echo "Downloading latest docker-compose.yml..."
             sudo curl --fail -sSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github.raw+json" \
               -o "$COMPOSE_FILE" \
-              "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/docker-compose.yml"
+              "https://api.github.com/repos/${{ github.repository }}/contents/docker-compose.yml?ref=${{ github.sha }}"
 
             echo "Writing Firebase credentials..."
             printf '%s' "$GOOGLE_APPLICATION_CREDENTIALS" | sudo tee "$SECRET_FILE.tmp" > /dev/null
