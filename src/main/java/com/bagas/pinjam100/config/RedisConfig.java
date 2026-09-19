@@ -34,11 +34,16 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(appConfigProp.getRedis().getHost());
-        config.setPort(appConfigProp.getRedis().getPort());
-        config.setUsername(appConfigProp.getRedis().getUsername());
-        config.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
+        RedisStandaloneConfiguration config =
+                new RedisStandaloneConfiguration();
+
+        config.setHostName(
+                appConfigProp.getRedis().getHost()
+        );
+
+        config.setPort(
+                appConfigProp.getRedis().getPort()
+        );
 
         LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder builder =
                 LettucePoolingClientConfiguration.builder();
@@ -47,15 +52,27 @@ public class RedisConfig {
                 .clientResources(DefaultClientResources.create())
                 .commandTimeout(appConfigProp.getRedis().getTimeout())
                 .poolConfig(new GenericObjectPoolConfig<>() {{
-                    setMaxTotal(appConfigProp.getRedis().getLettucePoolMaxActive());
-                    setMaxIdle(appConfigProp.getRedis().getLettucePoolMaxIdle());
-                    setMinIdle(appConfigProp.getRedis().getLettucePoolMinIdle());
-                    setMaxWait(appConfigProp.getRedis().getLettucePoolMaxWait());
+                    setMaxTotal(
+                            appConfigProp.getRedis().getLettucePoolMaxActive()
+                    );
+                    setMaxIdle(
+                            appConfigProp.getRedis().getLettucePoolMaxIdle()
+                    );
+                    setMinIdle(
+                            appConfigProp.getRedis().getLettucePoolMinIdle()
+                    );
+                    setMaxWait(
+                            appConfigProp.getRedis().getLettucePoolMaxWait()
+                    );
                 }});
 
-        LettuceClientConfiguration clientConfiguration = builder.build();
+        LettuceClientConfiguration clientConfiguration =
+                builder.build();
 
-        return new LettuceConnectionFactory(config, clientConfiguration);
+        return new LettuceConnectionFactory(
+                config,
+                clientConfiguration
+        );
     }
 
     @Bean
