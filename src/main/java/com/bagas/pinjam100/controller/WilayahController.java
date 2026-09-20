@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.controller;
 
+import com.bagas.pinjam100.dto.common.BaseResponse;
 import com.bagas.pinjam100.service.WilayahService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,18 +13,24 @@ public class WilayahController {
     private final WilayahService wilayahService;
 
     @GetMapping("/provinces")
-    public ResponseEntity<String> getProvinces() {
+    public ResponseEntity<BaseResponse<String>> getProvinces() {
         return ResponseEntity.ok(
-                wilayahService.getProvinces()
+                BaseResponse.success(
+                        "Data provinsi berhasil diambil",
+                        wilayahService.getProvinces()
+                )
         );
     }
 
     @GetMapping("/regencies/{provinceCode}")
-    public ResponseEntity<String> getRegencies(
+    public ResponseEntity<BaseResponse<String>> getRegencies(
             @PathVariable String provinceCode
     ) {
         return ResponseEntity.ok(
-                wilayahService.getRegencies(provinceCode)
+                BaseResponse.success(
+                        "Data kabupaten/kota berhasil diambil",
+                        wilayahService.getRegencies(provinceCode)
+                )
         );
     }
 }

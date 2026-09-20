@@ -35,7 +35,7 @@ public class AuthService {
     private final UserRefreshTokenService userRefreshTokenService;
     private final AppUserDetailsService appUserDetailsService;
 
-    public ResponseEntity<AuthResponse> login(
+    public AuthResponse login(
             Optional<AppUser> found,
             LoginRequest request
     ) {
@@ -94,15 +94,13 @@ public class AuthService {
                 )
                 .toList();
 
-        AuthResponse response = new AuthResponse(
+        return new AuthResponse(
                 token,
                 refreshToken,
                 user.getIdentityNumber(),
                 user.getRole().getRoleName(),
                 permissions
         );
-
-        return ResponseEntity.ok(response);
     }
 
     public ResponseEntity<Void> logout(
@@ -149,7 +147,7 @@ public class AuthService {
                 );
     }
 
-    public ResponseEntity<AuthResponse> refreshToken(
+    public AuthResponse refreshToken(
             RefreshTokenRequest request
     ) {
         UserRefreshToken refreshToken =
@@ -197,14 +195,12 @@ public class AuthService {
                 )
                 .toList();
 
-        AuthResponse response = new AuthResponse(
+        return new AuthResponse(
                 token,
                 request.getRefreshToken(),
                 appUser.getIdentityNumber(),
                 appUser.getRole().getRoleName(),
                 permissions
         );
-
-        return ResponseEntity.ok(response);
     }
 }

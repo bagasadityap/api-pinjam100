@@ -4,6 +4,7 @@ import com.bagas.pinjam100.dto.auth.AuthResponse;
 import com.bagas.pinjam100.dto.auth.LoginRequest;
 import com.bagas.pinjam100.dto.auth.LogoutRequest;
 import com.bagas.pinjam100.dto.auth.RefreshTokenRequest;
+import com.bagas.pinjam100.dto.common.BaseResponse;
 import com.bagas.pinjam100.dto.response.userrolepermission.UserResponse;
 import com.bagas.pinjam100.service.auth.AppUserDetailsService;
 import com.bagas.pinjam100.service.auth.AuthService;
@@ -27,42 +28,65 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> loginUser(
+    public ResponseEntity<BaseResponse<AuthResponse>> loginUser(
             @Valid @RequestBody LoginRequest request
     ) {
-        return authService.login(
+        AuthResponse response = authService.login(
                 appUserDetailsService.findUser(
                         request.getIdentityNumber()
                 ),
                 request
         );
+
+        return ResponseEntity.ok(
+                BaseResponse.success(
+                        "Login berhasil",
+                        response
+                )
+        );
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(
+    public ResponseEntity<BaseResponse<AuthResponse>> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
-        return authService.refreshToken(request);
+        AuthResponse response = authService.refreshToken(request);
+
+        return ResponseEntity.ok(
+                BaseResponse.success(
+                        "Token berhasil diperbarui",
+                        response
+                )
+        );
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
+    public ResponseEntity<BaseResponse<Void>> logout(
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody LogoutRequest request
     ) {
         String token = authorization.substring(7);
 
-        return authService.logout(
+        authService.logout(
                 token,
                 request.getRefreshToken()
+        );
+
+        return ResponseEntity.ok(
+                BaseResponse.success(
+                        "Logout berhasil"
+                )
         );
     }
 
     @GetMapping("/get-current-user")
-    public ResponseEntity<UserResponse> getCurrentUser() {
+    public ResponseEntity<BaseResponse<UserResponse>> getCurrentUser() {
         return ResponseEntity.ok(
-                new UserResponse(
-                        authService.getCurrentUser()
+                BaseResponse.success(
+                        "Berhasil mendapatkan data user",
+                        new UserResponse(
+                                authService.getCurrentUser()
+                        )
                 )
         );
     }

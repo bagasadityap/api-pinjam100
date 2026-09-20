@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.controller.dashboard;
 
+import com.bagas.pinjam100.dto.common.BaseResponse;
 import com.bagas.pinjam100.service.dashboard.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,12 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping
-    public ResponseEntity<?> dashboard() {
+    public ResponseEntity<BaseResponse<?>> dashboard() {
         return ResponseEntity.ok(
-                dashboardService.dashboard()
+                BaseResponse.success(
+                        "Data dashboard berhasil ditemukan",
+                        dashboardService.dashboard()
+                )
         );
     }
 }
