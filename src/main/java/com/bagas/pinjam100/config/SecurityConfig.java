@@ -46,6 +46,12 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
                         .frameOptions(frame -> frame.deny()))
                 .authorizeHttpRequests(request -> request
+                        .requestMatchers(
+                                "/docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email", "/uploads/files/**").permitAll()
                         .requestMatchers("/document", "/document/**", "/installment", "/dashboard").authenticated()
                         .requestMatchers("/user", "/user/**", "/role", "/role/**", "/permission", "/permission/**", "/branch", "/branch/**", "/wilayah", "/wilayah/**", "/customer", "/customer/**", "/loan-application", "/loan-application/**", "/customer-limit", "/customer-limit/**").authenticated()

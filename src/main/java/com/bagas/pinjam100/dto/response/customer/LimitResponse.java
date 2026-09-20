@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class LimitResponse {
     private UUID id;
+    private UUID customerId;
     private BigDecimal creditLimit;
     private BigDecimal availableLimit;
     private LocalDateTime createdDate;
@@ -23,6 +24,7 @@ public class LimitResponse {
 
     public LimitResponse(CustomerLimit customerLimit) {
         this.id = customerLimit.getId();
+        this.customerId = customerLimit.getCustomer().getId();
         this.creditLimit = customerLimit.getCreditLimit();
         this.availableLimit = customerLimit.getAvailableLimit();
         this.createdDate = customerLimit.getCreatedDate();
