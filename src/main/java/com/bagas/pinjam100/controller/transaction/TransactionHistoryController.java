@@ -1,8 +1,6 @@
 package com.bagas.pinjam100.controller.transaction;
 
 import com.bagas.pinjam100.dto.common.BaseResponse;
-import com.bagas.pinjam100.dto.installment.InstallmentResponse;
-import com.bagas.pinjam100.dto.response.loanapplication.DisbursementResponse;
 import com.bagas.pinjam100.dto.response.transaction.TransactionHistoryResponse;
 import com.bagas.pinjam100.service.transaction.TransactionHistoryService;
 import lombok.RequiredArgsConstructor;
