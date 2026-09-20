@@ -7,6 +7,8 @@ services:
       - "8080:8080"
 
     environment:
+      TZ: Asia/Jakarta
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Jakarta
       SPRING_PROFILES_ACTIVE: prod
 
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pinjam100

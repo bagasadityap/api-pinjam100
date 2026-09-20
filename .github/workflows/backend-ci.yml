@@ -18,6 +18,8 @@ jobs:
       postgres:
         image: postgres:16
         env:
+          TZ: Asia/Jakarta
+          PGTZ: Asia/Jakarta
           POSTGRES_DB: pinjam100_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -40,6 +42,9 @@ jobs:
           --health-retries=5
 
     env:
+      TZ: Asia/Jakarta
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Jakarta
+
       APPLICATION_NAME: bagas.pinjam100
 
       # PostgreSQL khusus CI
