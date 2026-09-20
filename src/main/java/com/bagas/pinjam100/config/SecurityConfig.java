@@ -46,7 +46,7 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
                         .frameOptions(frame -> frame.deny()))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email").permitAll()
+                        .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email", "/uploads/files/**").permitAll()
                         .requestMatchers("/document", "/document/**", "/installment", "/dashboard").authenticated()
                         .requestMatchers("/user", "/user/**", "/role", "/role/**", "/permission", "/permission/**", "/branch", "/branch/**", "/wilayah", "/wilayah/**", "/customer", "/customer/**", "/loan-application", "/loan-application/**", "/customer-limit", "/customer-limit/**").authenticated()
                         .anyRequest().authenticated())
@@ -80,15 +80,15 @@ public class SecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration konfigurasi = new CorsConfiguration();
-        konfigurasi.setAllowedOrigins(allowedOrigins);
-        konfigurasi.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        konfigurasi.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        konfigurasi.setAllowCredentials(true);
-        konfigurasi.setMaxAge(3600L);
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", konfigurasi);
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

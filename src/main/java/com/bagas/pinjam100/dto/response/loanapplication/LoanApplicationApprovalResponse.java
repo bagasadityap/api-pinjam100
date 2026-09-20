@@ -20,6 +20,7 @@ public class LoanApplicationApprovalResponse {
     private UUID id;
     private String applicationId;
     private BigDecimal loanAmount;
+    private BigDecimal installmentAmount;
     private Integer tenorMonths;
     private BigDecimal interestRate;
     private String purpose;
@@ -31,10 +32,11 @@ public class LoanApplicationApprovalResponse {
     private ReviewResponse review;
     private ApprovalResponse approval;
 
-    public LoanApplicationApprovalResponse(LoanApplication response, CustomerDetailResponse customer) {
+    public LoanApplicationApprovalResponse(LoanApplication response, CustomerDetailResponse customer, ReviewResponse review) {
         this.id = response.getId();
         this.applicationId = response.getApplicationId();
         this.loanAmount = response.getLoanAmount();
+        this.installmentAmount = response.getInstallmentAmount();
         this.tenorMonths = response.getTenorMonths();
         this.interestRate = response.getInterestRate();
         this.purpose = response.getPurpose();
@@ -44,6 +46,10 @@ public class LoanApplicationApprovalResponse {
 
         if (response.getBranch() != null) {
             this.branch = new BranchResponse(response.getBranch());
+        }
+
+        if (review != null) {
+            this.review = review;
         }
     }
 }

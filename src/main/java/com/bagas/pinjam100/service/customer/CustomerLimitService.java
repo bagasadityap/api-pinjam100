@@ -43,6 +43,7 @@ public class CustomerLimitService {
     public LimitResponse save(LimitRequest request) {
         CustomerLimit limit = new CustomerLimit();
         limit.setCreditLimit(request.getCreditLimit());
+        limit.setAvailableLimit(request.getCreditLimit());
 
         Customer customer = customerRepository.findByIdAndDeletedDateIsNull(request.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer tidak ditemukan"));

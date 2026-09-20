@@ -141,7 +141,13 @@ public class LoanApplicationService {
         CustomerDetailResponse customer =
                 customerService.findDetailById(response.getCustomer().getId());
 
-        return new LoanApplicationApprovalResponse(response, customer);
+        LoanApplicationReview review = loanApplicationReviewRepository
+                .findByLoanApplication_Id(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Aplikasi belum dilakukan review oleh marketing")
+                );
+
+        return new LoanApplicationApprovalResponse(response, customer, new ReviewResponse(review));
     }
 
     public LoanApplicationDisbursementResponse findByIdForDisbursement(UUID id) {

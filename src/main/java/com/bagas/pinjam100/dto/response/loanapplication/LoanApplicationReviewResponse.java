@@ -20,6 +20,7 @@ public class LoanApplicationReviewResponse {
     private UUID id;
     private String applicationId;
     private BigDecimal loanAmount;
+    private BigDecimal installmentAmount;
     private Integer tenorMonths;
     private BigDecimal interestRate;
     private String purpose;
@@ -34,6 +35,7 @@ public class LoanApplicationReviewResponse {
         this.id = response.getId();
         this.applicationId = response.getApplicationId();
         this.loanAmount = response.getLoanAmount();
+        this.installmentAmount = response.getInstallmentAmount();
         this.tenorMonths = response.getTenorMonths();
         this.interestRate = response.getInterestRate();
         this.purpose = response.getPurpose();
