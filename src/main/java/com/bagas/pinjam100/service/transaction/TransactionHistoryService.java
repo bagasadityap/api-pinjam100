@@ -1,11 +1,14 @@
 package com.bagas.pinjam100.service.transaction;
 
+import com.bagas.pinjam100.dto.installment.InstallmentResponse;
+import com.bagas.pinjam100.dto.response.loanapplication.DisbursementResponse;
 import com.bagas.pinjam100.dto.response.transaction.TransactionHistoryResponse;
 import com.bagas.pinjam100.entity.installment.InstallmentStatus;
 import com.bagas.pinjam100.entity.installment.LoanInstallment;
 import com.bagas.pinjam100.entity.loanapplication.LoanDisbursement;
 import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
-import com.bagas.pinjam100.service.loanapplication.LoanDisbursementRepository;
+import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,14 +22,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class TransactionHistoryService {
-    private final LoanDisbursementRepository loanDisbursementRepository;
+    private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
     private final LoanInstallmentRepository loanInstallmentRepository;
 
     public List<TransactionHistoryResponse> getByCustomerId(UUID customerId) {
 
         List<TransactionHistoryResponse> transactions = new ArrayList<>();
 
-        loanDisbursementRepository
+        loanApplicationDisbursementRepository
                 .findByLoanApplication_Customer_Id(customerId)
                 .stream()
                 .map(this::mapDisbursement)
