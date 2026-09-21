@@ -1,40 +1,77 @@
 package com.bagas.pinjam100.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bagas.pinjam100.exception.AuthenticationException;
-import com.bagas.pinjam100.exception.ForbiddenException;
-import com.bagas.pinjam100.exception.ForbiddenHandler;
 import com.bagas.pinjam100.filter.JwtAuthFilter;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 @Configuration
-@AllArgsConstructor
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
-    private JwtAuthFilter jwtAuthFilter;
+
+    private final JwtAuthFilter jwtAuthFilter;
+    private final ObjectMapper objectMapper;
+
     @Value("${app.security.cors-allowed-origins}")
     private List<String> allowedOrigins;
-    private final ForbiddenHandler forbiddenHandler;
 
     @Bean
-    SecurityFilterChain securityFilterChain (HttpSecurity http) throws AuthenticationException {
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("""
+                SUPER_ADMIN > ADMIN
+                SUPER_ADMIN > USER
+                SUPER_ADMIN > CUSTOMER
+                SUPER_ADMIN > user:read
+                SUPER_ADMIN > user:write
+                SUPER_ADMIN > user:delete
+                SUPER_ADMIN > role:read
+                SUPER_ADMIN > role:write
+                SUPER_ADMIN > role:delete
+                SUPER_ADMIN > permission:read
+                SUPER_ADMIN > permission:write
+                SUPER_ADMIN > permission:delete
+                SUPER_ADMIN > customer:read
+                SUPER_ADMIN > customer:verify
+                SUPER_ADMIN > dashboard:read
+                SUPER_ADMIN > loan:read
+                SUPER_ADMIN > loan:review
+                SUPER_ADMIN > loan:approve
+                SUPER_ADMIN > loan:disburse
+                SUPER_ADMIN > loan:delete
+                SUPER_ADMIN > branch:read
+                SUPER_ADMIN > branch:write
+                SUPER_ADMIN > branch:delete
+                SUPER_ADMIN > document:verify
+                SUPER_ADMIN > limit:write
+                """);
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws AuthenticationException {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -46,26 +83,46 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
                         .frameOptions(frame -> frame.deny()))
                 .authorizeHttpRequests(request -> request
+                        // Public endpoints
                         .requestMatchers(
                                 "/docs",
                                 "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/scalar/**",
+                                "/auth/**",
+                                "/uploads/files/**"
                         ).permitAll()
-                        .requestMatchers("/auth/**", "/test/**", "/transaction-history/**", "/test/email", "/uploads/files/**").permitAll()
-                        .requestMatchers("/document", "/document/**", "/installment", "/dashboard").authenticated()
-                        .requestMatchers("/user", "/user/**", "/role", "/role/**", "/permission", "/permission/**", "/branch", "/branch/**", "/wilayah", "/wilayah/**", "/customer", "/customer/**", "/loan-application", "/loan-application/**", "/customer-limit", "/customer-limit/**").authenticated()
+
+                        // All other endpoints require authentication (authorized via @PreAuthorize at method level)
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(
-                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
-                        )
-                        .accessDeniedHandler((request, response, accessDeniedException) ->
-                                forbiddenHandler.response(
-                                        response,
-                                        "Anda tidak memiliki akses"
-                                )
-                        )
+                        // Handle unauthenticated requests (401)
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+                            Map<String, Object> body = Map.of(
+                                    "message", "Silakan melakukan login",
+                                    "error", "Unauthorized",
+                                    "status", 401,
+                                    "timestamp", Instant.now().toString()
+                            );
+
+                            objectMapper.writeValue(response.getOutputStream(), body);
+                        })
+                        // Handle unauthorized / access denied requests (403)
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+                            Map<String, Object> body = Map.of(
+                                    "message", "Anda tidak memiliki akses ke resource ini",
+                                    "error", "Forbidden",
+                                    "status", 403,
+                                    "timestamp", Instant.now().toString()
+                            );
+
+                            objectMapper.writeValue(response.getOutputStream(), body);
+                        })
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())

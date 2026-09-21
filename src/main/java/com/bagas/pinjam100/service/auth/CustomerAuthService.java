@@ -176,7 +176,8 @@ public class CustomerAuthService {
 
         return ResponseEntity.ok(
                 BaseResponse.success(
-                        "Registrasi berhasil"
+                        "Registrasi berhasil",
+                        null
                 )
         );
     }
@@ -305,7 +306,8 @@ public class CustomerAuthService {
 
         return ResponseEntity.ok(
                 BaseResponse.success(
-                        "OTP berhasil dikirim ulang"
+                        "OTP berhasil dikirim ulang",
+                        null
                 )
         );
     }
@@ -352,7 +354,8 @@ public class CustomerAuthService {
 
         return ResponseEntity.ok(
                 BaseResponse.success(
-                        "Password berhasil diubah"
+                        "Password berhasil diubah",
+                        null
                 )
         );
     }

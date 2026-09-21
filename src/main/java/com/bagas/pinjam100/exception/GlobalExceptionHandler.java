@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.exception;
 
+import com.bagas.pinjam100.dto.common.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,62 +10,63 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.Instant;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public static final String PESAN_AUTENTIKASI_DIPERLUKAN = "Silakan melakukan login";
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> illegalArgument(IllegalArgumentException e) {
+    public ResponseEntity<ErrorResponse> illegalArgument(IllegalArgumentException e) {
         return build(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> entityNotFound(EntityNotFoundException e) {
+    public ResponseEntity<ErrorResponse> entityNotFound(EntityNotFoundException e) {
         return build(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(BusinessRuleException.class)
-    public ResponseEntity<Map<String, Object>> bussinessRuleException(BusinessRuleException e) {
+    public ResponseEntity<ErrorResponse> bussinessRuleException(BusinessRuleException e) {
         return build(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(HttpClientErrorException.Unauthorized.class)
-    public ResponseEntity<Map<String, Object>> unauthorized(HttpClientErrorException.Unauthorized e) {
+    public ResponseEntity<ErrorResponse> unauthorized(HttpClientErrorException.Unauthorized e) {
         return build(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, Object>> authenticationException(AuthenticationException e) {
+    public ResponseEntity<ErrorResponse> authenticationException(AuthenticationException e) {
         return build(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<Map<String, Object>> forbiddenException(ForbiddenException e) {
+    public ResponseEntity<ErrorResponse> forbiddenException(ForbiddenException e) {
         return build(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<Map<String, Object>> conflictException(ConflictException e) {
+    public ResponseEntity<ErrorResponse> conflictException(ConflictException e) {
         return build(HttpStatus.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(InvalidFcmTokenException.class)
-    public ResponseEntity<Map<String, Object>> invalidFcmToken(InvalidFcmTokenException e) {
+    public ResponseEntity<ErrorResponse> invalidFcmToken(InvalidFcmTokenException e) {
         return build(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
-    private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message) {
-        return ResponseEntity.status(status).body(body(status, message));
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> globalException(Exception e) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Terjadi kesalahan pada server");
     }
 
-    private Map<String, Object> body(HttpStatus status, String message) {
-        return Map.of(
-                "timestamp", Instant.now().toString(),
-                "status", status.value(),
-                "error", status.getReasonPhrase(),
-                "message", message == null ? "" : message
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message) {
+        ErrorResponse response = new ErrorResponse(
+                message == null ? "" : message,
+                status.getReasonPhrase(),
+                status.value(),
+                Instant.now().toString()
         );
+        return ResponseEntity.status(status).body(response);
     }
 }
