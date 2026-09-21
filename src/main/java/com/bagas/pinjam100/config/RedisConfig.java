@@ -30,6 +30,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @EnableCaching
 public class RedisConfig {
+
     private final AppConfigProperties appConfigProp;
 
     @Bean
@@ -58,17 +59,12 @@ public class RedisConfig {
         return new LettuceConnectionFactory(config, clientConfiguration);
     }
 
-    @Bean
-    public RedisCacheConfiguration redisCacheConfiguration() {
-
+    private ObjectMapper createRedisObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-
         objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        objectMapper.disable(
-                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
-        );
-
+        // Izinkan paket aplikasi DAN paket bawaan Java (util/lang) untuk List/Set/Map/UUID
         BasicPolymorphicTypeValidator validator =
                 BasicPolymorphicTypeValidator.builder()
                         .allowIfSubType("com.bagas.pinjam100")
@@ -81,6 +77,12 @@ public class RedisConfig {
                 ObjectMapper.DefaultTyping.NON_FINAL
         );
 
+        return objectMapper;
+    }
+
+    @Bean
+    public RedisCacheConfiguration redisCacheConfiguration() {
+        ObjectMapper objectMapper = createRedisObjectMapper();
         GenericJackson2JsonRedisSerializer serializer =
                 new GenericJackson2JsonRedisSerializer(objectMapper);
 
@@ -104,27 +106,16 @@ public class RedisConfig {
         return config;
     }
 
-    private String normalizePrefix(String prefix) {
-        if (prefix == null) return "";
-        String p = prefix.trim();
-        if (p.isEmpty()) return "";
-        return p.endsWith(":") ? p : (p + ":");
-    }
-
     @Bean
     public RedisTemplate<String, Object> redisTemplate(
             RedisConnectionFactory connectionFactory
     ) {
-        RedisTemplate<String, Object> template =
-                new RedisTemplate<>();
-
-        StringRedisSerializer keySerializer =
-                new StringRedisSerializer();
-
-        GenericJackson2JsonRedisSerializer valueSerializer =
-                new GenericJackson2JsonRedisSerializer();
-
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
+
+        StringRedisSerializer keySerializer = new StringRedisSerializer();
+        GenericJackson2JsonRedisSerializer valueSerializer =
+                new GenericJackson2JsonRedisSerializer(createRedisObjectMapper());
 
         template.setKeySerializer(keySerializer);
         template.setHashKeySerializer(keySerializer);
@@ -135,5 +126,12 @@ public class RedisConfig {
         template.afterPropertiesSet();
 
         return template;
+    }
+
+    private String normalizePrefix(String prefix) {
+        if (prefix == null) return "";
+        String p = prefix.trim();
+        if (p.isEmpty()) return "";
+        return p.endsWith(":") ? p : (p + ":");
     }
 }
