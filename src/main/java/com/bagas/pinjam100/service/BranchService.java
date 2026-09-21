@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.BranchRequest;
 import com.bagas.pinjam100.dto.response.BranchResponse;
 import com.bagas.pinjam100.entity.Branch;
@@ -22,12 +23,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BranchService {
 
-    public static final String CACHE_BRANCH = "branch";
-    public static final String CACHE_BRANCH_ALL = "branch_all";
-
     private final BranchRepository branchRepository;
 
-    @Cacheable(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CACHE_BRANCH_ALL, key = "'all_active'")
     public List<BranchResponse> findAllByDeletedDateIsNull() {
         return branchRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -35,14 +33,14 @@ public class BranchService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_BRANCH, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_BRANCH, key = "#id")
     public BranchResponse findByIdAndDeletedDateIsNull(UUID id) {
         Branch response = branchRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"));
         return new BranchResponse(response);
     }
 
-    @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+    @CacheEvict(cacheNames = CacheNames.CACHE_BRANCH_ALL, key = "'all_active'")
     public BranchResponse save(BranchRequest request) {
         Branch branch = new Branch();
         branch.setName(request.getName());
@@ -55,8 +53,8 @@ public class BranchService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_BRANCH, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_BRANCH, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_BRANCH_ALL, key = "'all_active'")
     })
     public BranchResponse update(UUID id, BranchRequest request) {
         Branch branch = branchRepository.findByIdAndDeletedDateIsNull(id)
@@ -72,8 +70,8 @@ public class BranchService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_BRANCH, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_BRANCH, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_BRANCH_ALL, key = "'all_active'")
     })
     public BranchResponse delete(UUID id) {
         Branch branch = branchRepository.findByIdAndDeletedDateIsNull(id)

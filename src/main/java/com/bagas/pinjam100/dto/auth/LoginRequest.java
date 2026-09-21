@@ -1,6 +1,5 @@
 package com.bagas.pinjam100.dto.auth;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 

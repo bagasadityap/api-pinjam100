@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.customer;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.customer.DocumentRequest;
 import com.bagas.pinjam100.dto.response.customer.DocumentResponse;
 import com.bagas.pinjam100.entity.customer.Customer;
@@ -21,9 +22,6 @@ import java.util.UUID;
 @Service
 public class DocumentService {
 
-    public static final String CACHE_DOCUMENT = "document";
-    public static final String CACHE_DOCUMENT_ALL = "document_all";
-
     private final DocumentRepository documentRepository;
     private final CustomerRepository customerRepository;
     private final FileStorageService fileStorageService;
@@ -34,14 +32,14 @@ public class DocumentService {
         this.fileStorageService = fileStorageService;
     }
 
-    @Cacheable(cacheNames = CACHE_DOCUMENT, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_DOCUMENT, key = "#id")
     public DocumentResponse findById(UUID id) {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Dokumen tidak ditemukan"));
         return new DocumentResponse(document);
     }
 
-    @CacheEvict(cacheNames = CACHE_DOCUMENT_ALL, key = "'all'")
+    @CacheEvict(cacheNames = CacheNames.CACHE_DOCUMENT_ALL, key = "'all'")
     public DocumentResponse upload(MultipartFile file, DocumentRequest documentRequest) {
         Customer customer = customerRepository.findById(documentRequest.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer tidak ditemukan"));
@@ -64,8 +62,8 @@ public class DocumentService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_DOCUMENT, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_DOCUMENT_ALL, key = "'all'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_DOCUMENT, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DOCUMENT_ALL, key = "'all'")
     })
     public DocumentResponse verifyDocument(UUID id, VerificationStatus verificationStatus) {
         Document document = documentRepository.findById(id)
@@ -78,8 +76,8 @@ public class DocumentService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_DOCUMENT, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_DOCUMENT_ALL, key = "'all'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_DOCUMENT, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DOCUMENT_ALL, key = "'all'")
     })
     public DocumentResponse delete(UUID id) {
         Document document = documentRepository.findById(id)

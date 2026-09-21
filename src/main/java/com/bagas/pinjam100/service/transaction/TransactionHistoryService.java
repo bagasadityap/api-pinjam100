@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.transaction;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.response.transaction.TransactionHistoryResponse;
 import com.bagas.pinjam100.entity.installment.InstallmentStatus;
 import com.bagas.pinjam100.entity.installment.LoanInstallment;
@@ -21,15 +22,12 @@ import java.util.UUID;
 @Transactional
 public class TransactionHistoryService {
 
-    public static final String CACHE_TRANSACTION_HISTORY = "transaction_history";
-
     private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
     private final LoanInstallmentRepository loanInstallmentRepository;
 
     @Transactional
-    @Cacheable(cacheNames = CACHE_TRANSACTION_HISTORY, key = "#customerId")
+    @Cacheable(cacheNames = CacheNames.CACHE_TRANSACTION_HISTORY, key = "#customerId")
     public List<TransactionHistoryResponse> getByCustomerId(UUID customerId) {
-
         List<TransactionHistoryResponse> transactions = new ArrayList<>();
 
         loanApplicationDisbursementRepository

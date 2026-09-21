@@ -1,14 +1,21 @@
 package com.bagas.pinjam100.config;
 
 import com.bagas.pinjam100.config.prop.AppConfigProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.resource.DefaultClientResources;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
+import org.springframework.cache.interceptor.KeyGenerator;
+import org.springframework.cache.interceptor.SimpleCacheErrorHandler;
+import org.springframework.cache.interceptor.SimpleKeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.CacheKeyPrefix;
@@ -16,11 +23,10 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -29,114 +35,251 @@ import java.time.Duration;
 @Configuration
 @RequiredArgsConstructor
 @EnableCaching
-public class RedisConfig {
+public class RedisConfig implements CachingConfigurer {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
 
     private final AppConfigProperties appConfigProp;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(appConfigProp.getRedis().getHost());
-        config.setPort(appConfigProp.getRedis().getPort());
-        config.setUsername(appConfigProp.getRedis().getUsername());
-        config.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        redisConfig.setHostName(appConfigProp.getRedis().getHost());
+        redisConfig.setPort(appConfigProp.getRedis().getPort());
+        redisConfig.setUsername(appConfigProp.getRedis().getUsername());
+        redisConfig.setPassword(RedisPassword.of(appConfigProp.getRedis().getPassword()));
 
-        LettucePoolingClientConfiguration.LettucePoolingClientConfigurationBuilder builder =
-                LettucePoolingClientConfiguration.builder();
+        GenericObjectPoolConfig<StatefulConnection<?, ?>> poolConfig = new GenericObjectPoolConfig<>();
+        poolConfig.setMaxTotal(appConfigProp.getRedis().getLettucePoolMaxActive());
+        poolConfig.setMaxIdle(appConfigProp.getRedis().getLettucePoolMaxIdle());
+        poolConfig.setMinIdle(appConfigProp.getRedis().getLettucePoolMinIdle());
+        poolConfig.setMaxWait(appConfigProp.getRedis().getLettucePoolMaxWait());
 
-        builder
+        LettucePoolingClientConfiguration clientConfig = LettucePoolingClientConfiguration.builder()
                 .clientResources(DefaultClientResources.create())
                 .commandTimeout(appConfigProp.getRedis().getTimeout())
-                .poolConfig(new GenericObjectPoolConfig<>() {{
-                    setMaxTotal(appConfigProp.getRedis().getLettucePoolMaxActive());
-                    setMaxIdle(appConfigProp.getRedis().getLettucePoolMaxIdle());
-                    setMinIdle(appConfigProp.getRedis().getLettucePoolMinIdle());
-                    setMaxWait(appConfigProp.getRedis().getLettucePoolMaxWait());
-                }});
+                .poolConfig(poolConfig)
+                .build();
 
-        LettuceClientConfiguration clientConfiguration = builder.build();
-
-        return new LettuceConnectionFactory(config, clientConfiguration);
-    }
-
-    /**
-     * Helper method untuk membuat ObjectMapper yang mendukung:
-     * 1. JavaTimeModule (LocalDateTime, LocalDate, dll)
-     * 2. Package aplikasi 'com.bagas.pinjam100' & Java collections ('java.util', 'java.lang')
-     */
-    private ObjectMapper createRedisObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        BasicPolymorphicTypeValidator validator =
-                BasicPolymorphicTypeValidator.builder()
-                        .allowIfSubType("com.bagas.pinjam100") // Package project kamu
-                        .allowIfSubType("java.util")           // Untuk List, Map, Set
-                        .allowIfSubType("java.lang")           // Untuk String, Long, Integer, dll
-                        .build();
-
-        objectMapper.activateDefaultTyping(
-                validator,
-                ObjectMapper.DefaultTyping.NON_FINAL
-        );
-
-        return objectMapper;
+        return new LettuceConnectionFactory(redisConfig, clientConfig);
     }
 
     @Bean
     public RedisCacheConfiguration redisCacheConfiguration() {
-        ObjectMapper objectMapper = createRedisObjectMapper();
-        GenericJackson2JsonRedisSerializer serializer =
-                new GenericJackson2JsonRedisSerializer(objectMapper);
+        return baseConfiguration(Duration.ofHours(1));
+    }
 
-        RedisCacheConfiguration config =
-                RedisCacheConfiguration.defaultCacheConfig()
-                        .entryTtl(Duration.ofHours(1))
-                        .serializeValuesWith(
-                                RedisSerializationContext.SerializationPair
-                                        .fromSerializer(serializer)
-                        );
+    @Bean
+    public RedisCacheManagerBuilderCustomizer cacheTtls() {
+        return builder -> {
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_USER,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_USER_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_ROLE,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_ROLE_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_PERMISSION,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_PERMISSION_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_CUSTOMER,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_CUSTOMER_DETAIL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_CUSTOMER_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_LIMIT,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_LIMIT_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_DOCUMENT,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_DOCUMENT_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_DASHBOARD,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_INSTALLMENT,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_INSTALLMENT_APPLICATION,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_INSTALLMENT_CUSTOMER,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_LOAN,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_LOAN_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_TRANSACTION_HISTORY,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_BRANCH,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_BRANCH_ALL,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_PROVINCES,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+            builder.withCacheConfiguration(
+                    CacheNames.CACHE_REGENCIES,
+                    baseConfiguration(Duration.ofHours(1))
+            );
+        };
+    }
 
-        String prefix =
-                normalizePrefix(appConfigProp.getRedis().getKeyPrefix());
+    private RedisCacheConfiguration baseConfiguration(Duration ttl) {
+        GenericJacksonJsonRedisSerializer serializer = new GenericJacksonJsonRedisSerializer(objectMapper);
+
+        RedisCacheConfiguration config = RedisCacheConfiguration
+                .defaultCacheConfig()
+                .entryTtl(ttl)
+                .disableCachingNullValues()
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                new StringRedisSerializer()
+                        )
+                )
+                .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                serializer
+                        )
+                );
+
+        String prefix = normalizePrefix(appConfigProp.getRedis().getKeyPrefix());
 
         if (!prefix.isEmpty()) {
-            config = config.computePrefixWith(
-                    CacheKeyPrefix.prefixed(prefix)
-            );
+            config = config.computePrefixWith(CacheKeyPrefix.prefixed(prefix));
         }
 
         return config;
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(
-            RedisConnectionFactory connectionFactory
-    ) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        // Menggunakan ObjectMapper yang sama dengan RedisCacheConfiguration
-        GenericJackson2JsonRedisSerializer valueSerializer =
-                new GenericJackson2JsonRedisSerializer(createRedisObjectMapper());
+        GenericJacksonJsonRedisSerializer valueSerializer = new GenericJacksonJsonRedisSerializer(objectMapper);
 
         template.setKeySerializer(keySerializer);
         template.setHashKeySerializer(keySerializer);
-
         template.setValueSerializer(valueSerializer);
         template.setHashValueSerializer(valueSerializer);
-
         template.afterPropertiesSet();
 
         return template;
     }
 
     private String normalizePrefix(String prefix) {
-        if (prefix == null) return "";
-        String p = prefix.trim();
-        if (p.isEmpty()) return "";
-        return p.endsWith(":") ? p : (p + ":");
+        if (prefix == null) {
+            return "";
+        }
+
+        String normalized = prefix.trim();
+
+        if (normalized.isEmpty()) {
+            return "";
+        }
+
+        return normalized.endsWith(":") ? normalized : normalized + ":";
+    }
+
+    @Override
+    public KeyGenerator keyGenerator() {
+        return (target, method, params) ->
+                params.length == 0
+                        ? ""
+                        : SimpleKeyGenerator.generateKey(params);
+    }
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new SimpleCacheErrorHandler() {
+
+            @Override
+            public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
+                log.warn(
+                        "Cache read failed on {} (key {}); falling back to DB: {}",
+                        cache.getName(),
+                        key,
+                        exception.getMessage()
+                );
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
+                log.warn(
+                        "Cache write failed on {} (key {}): {}",
+                        cache.getName(),
+                        key,
+                        exception.getMessage()
+                );
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
+                log.warn(
+                        "Cache evict failed on {} (key {}): {}",
+                        cache.getName(),
+                        key,
+                        exception.getMessage()
+                );
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException exception, Cache cache) {
+                log.warn(
+                        "Cache clear failed on {}: {}",
+                        cache.getName(),
+                        exception.getMessage()
+                );
+            }
+        };
     }
 }

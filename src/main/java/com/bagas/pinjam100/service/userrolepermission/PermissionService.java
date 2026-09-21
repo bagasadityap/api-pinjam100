@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.userrolepermission;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.userrolepermission.PermissionRequest;
 import com.bagas.pinjam100.dto.response.userrolepermission.PermissionResponse;
 import com.bagas.pinjam100.entity.userrolepermission.Permission;
@@ -23,12 +24,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PermissionService {
 
-    public static final String CACHE_PERMISSION = "permission";
-    public static final String CACHE_PERMISSION_ALL = "permission_all";
-
     private final PermissionRepository permissionRepository;
 
-    @Cacheable(cacheNames = CACHE_PERMISSION_ALL, key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CACHE_PERMISSION_ALL, key = "'all_active'")
     public List<PermissionResponse> findAllByDeletedDateIsNull() {
         return permissionRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -36,14 +34,14 @@ public class PermissionService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_PERMISSION, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_PERMISSION, key = "#id")
     public PermissionResponse findByIdAndDeletedDateIsNull(UUID id) {
         Permission response = permissionRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Permission tidak ditemukan"));
         return new PermissionResponse(response);
     }
 
-    @CacheEvict(cacheNames = CACHE_PERMISSION_ALL, key = "'all_active'")
+    @CacheEvict(cacheNames = CacheNames.CACHE_PERMISSION_ALL, key = "'all_active'")
     public PermissionResponse save(PermissionRequest request) {
         if (permissionRepository.existsByPermissionNameAndDeletedDateIsNull(request.getPermissionName())) {
             throw new ConflictException("Permission sudah ada");
@@ -58,8 +56,8 @@ public class PermissionService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_PERMISSION, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_PERMISSION_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_PERMISSION, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_PERMISSION_ALL, key = "'all_active'")
     })
     public PermissionResponse update(UUID id, PermissionRequest request) {
         Permission permission = permissionRepository.findByIdAndDeletedDateIsNull(id)
@@ -77,8 +75,8 @@ public class PermissionService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_PERMISSION, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_PERMISSION_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_PERMISSION, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_PERMISSION_ALL, key = "'all_active'")
     })
     public PermissionResponse delete(UUID id) {
         Permission permission = permissionRepository.findByIdAndDeletedDateIsNull(id)

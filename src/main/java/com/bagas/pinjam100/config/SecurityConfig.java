@@ -1,6 +1,5 @@
 package com.bagas.pinjam100.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bagas.pinjam100.exception.AuthenticationException;
 import com.bagas.pinjam100.filter.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -71,87 +71,177 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws AuthenticationException {
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws AuthenticationException {
+
         return http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(
+                        corsConfigurationSource()
+                ))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default src 'none'; frame-ancestors: 'none'; base uri: 'none'"))
+                                "default-src 'none'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "base-uri 'none'"
+                        ))
                         .referrerPolicy(referer -> referer.policy(
-                                ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
-                        .frameOptions(frame -> frame.deny()))
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER
+                        ))
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                        .frameOptions(frame -> frame.deny())
+                )
                 .authorizeHttpRequests(request -> request
-                        // Public endpoints
                         .requestMatchers(
                                 "/docs",
                                 "/v3/api-docs/**",
                                 "/scalar/**",
                                 "/auth/**",
                                 "/uploads/files/**"
-                        ).permitAll()
-
-                        // All other endpoints require authentication (authorized via @PreAuthorize at method level)
-                        .anyRequest().authenticated())
+                        )
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated()
+                )
                 .exceptionHandling(exception -> exception
-                        // Handle unauthenticated requests (401)
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-                            Map<String, Object> body = Map.of(
-                                    "message", "Silakan melakukan login",
-                                    "error", "Unauthorized",
-                                    "status", 401,
-                                    "timestamp", Instant.now().toString()
-                            );
+                        .authenticationEntryPoint(
+                                (request, response, authException) -> {
 
-                            objectMapper.writeValue(response.getOutputStream(), body);
-                        })
-                        // Handle unauthorized / access denied requests (403)
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                                    response.setStatus(
+                                            HttpStatus.UNAUTHORIZED.value()
+                                    );
 
-                            Map<String, Object> body = Map.of(
-                                    "message", "Anda tidak memiliki akses ke resource ini",
-                                    "error", "Forbidden",
-                                    "status", 403,
-                                    "timestamp", Instant.now().toString()
-                            );
+                                    response.setContentType(
+                                            MediaType.APPLICATION_JSON_VALUE
+                                    );
 
-                            objectMapper.writeValue(response.getOutputStream(), body);
-                        })
+                                    Map<String, Object> body = Map.of(
+                                            "message",
+                                            "Silakan melakukan login",
+
+                                            "error",
+                                            "Unauthorized",
+
+                                            "status",
+                                            401,
+
+                                            "timestamp",
+                                            Instant.now().toString()
+                                    );
+
+                                    objectMapper.writeValue(
+                                            response.getOutputStream(),
+                                            body
+                                    );
+                                }
+                        )
+
+                        .accessDeniedHandler(
+                                (request, response, accessDeniedException) -> {
+
+                                    response.setStatus(
+                                            HttpStatus.FORBIDDEN.value()
+                                    );
+
+                                    response.setContentType(
+                                            MediaType.APPLICATION_JSON_VALUE
+                                    );
+
+                                    Map<String, Object> body = Map.of(
+                                            "message",
+                                            "Anda tidak memiliki akses ke resource ini",
+
+                                            "error",
+                                            "Forbidden",
+
+                                            "status",
+                                            403,
+
+                                            "timestamp",
+                                            Instant.now().toString()
+                                    );
+
+                                    objectMapper.writeValue(
+                                            response.getOutputStream(),
+                                            body
+                                    );
+                                }
+                        )
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
                 .build();
     }
 
     @Bean
     PasswordEncoder passwordEncoder() {
+
         String baku = "bcrypt";
+
         Map<String, PasswordEncoder> encoders = Map.of(
                 baku,
-                new BCryptPasswordEncoder(12));
-        return new DelegatingPasswordEncoder(baku, encoders);
+                new BCryptPasswordEncoder(12)
+        );
+
+        return new DelegatingPasswordEncoder(
+                baku,
+                encoders
+        );
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                allowedOrigins
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of(
+                        "Authorization",
+                        "Content-Type"
+                )
+        );
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
         return source;
     }
 }

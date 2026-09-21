@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.userrolepermission;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.userrolepermission.RoleRequest;
 import com.bagas.pinjam100.dto.response.userrolepermission.RoleResponse;
 import com.bagas.pinjam100.entity.userrolepermission.Permission;
@@ -27,14 +28,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RoleService {
 
-    public static final String CACHE_ROLE = "role";
-    public static final String CACHE_ROLE_ALL = "role_all";
-
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final RolePermissionRepository rolePermissionRepository;
 
-    @Cacheable(cacheNames = CACHE_ROLE_ALL, key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CACHE_ROLE_ALL, key = "'all_active'")
     public List<RoleResponse> findAllByDeletedDateIsNull() {
         return roleRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -42,14 +40,14 @@ public class RoleService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_ROLE, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_ROLE, key = "#id")
     public RoleResponse findByIdAndDeletedDateIsNull(UUID id) {
         Role response = roleRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Role tidak ditemukan"));
         return new RoleResponse(response);
     }
 
-    @CacheEvict(cacheNames = CACHE_ROLE_ALL, key = "'all_active'")
+    @CacheEvict(cacheNames = CacheNames.CACHE_ROLE_ALL, key = "'all_active'")
     public RoleResponse save(RoleRequest request) {
         if (roleRepository.existsByRoleNameAndDeletedDateIsNull(request.getRoleName())) {
             throw new ConflictException("Nama role sudah ada");
@@ -62,8 +60,8 @@ public class RoleService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_ROLE, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_ROLE_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE_ALL, key = "'all_active'")
     })
     public RoleResponse update(UUID id, RoleRequest request) {
         Role role = roleRepository.findByIdAndDeletedDateIsNull(id)
@@ -82,8 +80,8 @@ public class RoleService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_ROLE, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_ROLE_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE_ALL, key = "'all_active'")
     })
     @Transactional
     public RoleResponse updatePermission(UUID id, List<UUID> permissions) {
@@ -108,8 +106,8 @@ public class RoleService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_ROLE, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_ROLE_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_ROLE_ALL, key = "'all_active'")
     })
     public RoleResponse delete(UUID id) {
         Role role = roleRepository.findByIdAndDeletedDateIsNull(id)

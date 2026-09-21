@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.customer;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.customer.CustomerDetailRequest;
 import com.bagas.pinjam100.dto.request.customer.CustomerEmploymentRequest;
 import com.bagas.pinjam100.dto.request.customer.CustomerOnboardingRequest;
@@ -36,10 +37,6 @@ import java.util.UUID;
 @Service
 public class CustomerService {
 
-    public static final String CACHE_CUSTOMER = "customer";
-    public static final String CACHE_CUSTOMER_DETAIL = "customer_detail";
-    public static final String CACHE_CUSTOMER_ALL = "customer_all";
-
     private final CustomerRepository customerRepository;
     private final CustomerDetailRepository customerDetailRepository;
     private final CustomerEmploymentRepository customerEmploymentRepository;
@@ -63,7 +60,7 @@ public class CustomerService {
         this.rekeningRepository = rekeningRepository;
     }
 
-    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, key = "'all_active'")
     public List<CustomerResponse> findAllByDeletedDateIsNull() {
         return customerRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -71,7 +68,7 @@ public class CustomerService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'pending'")
+    @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, key = "'pending'")
     public List<CustomerResponse> findPendingCustomer() {
         return customerRepository
                 .findByVerificationStatus(VerificationStatus.PENDING)
@@ -80,7 +77,7 @@ public class CustomerService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'verified_no_limit'")
+    @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, key = "'verified_no_limit'")
     public List<CustomerResponse> findVerifiedAndLimitIsNull() {
         return customerRepository
                 .findVerifiedAndLimitIsNull(VerificationStatus.VERIFIED)
@@ -89,12 +86,12 @@ public class CustomerService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_CUSTOMER, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#id")
     public CustomerResponse findByIdAndDeletedDateIsNull(UUID id) {
         return toCustomerResponse(getCustomer(id));
     }
 
-    @Cacheable(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId")
+    @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#customerId")
     public CustomerDetailResponse findDetailById(UUID customerId) {
         Customer customer = getCustomer(customerId);
 
@@ -128,9 +125,9 @@ public class CustomerService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, allEntries = true)
     })
     public CustomerResponse update(UUID id, CustomerRequest request) {
         Customer customer = getCustomer(id);
@@ -146,9 +143,9 @@ public class CustomerService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, allEntries = true)
     })
     public CustomerResponse delete(UUID id) {
         Customer customer = getCustomer(id);
@@ -161,9 +158,9 @@ public class CustomerService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, allEntries = true)
     })
     public CustomerDetailResponse saveOnboarding(
             UUID customerId,
@@ -186,9 +183,9 @@ public class CustomerService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, allEntries = true)
     })
     public CustomerDetailResponse updateOnboarding(
             UUID customerId,
@@ -211,9 +208,9 @@ public class CustomerService {
 
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
-            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, allEntries = true)
     })
     public CustomerDetailResponse verifyCustomer(
             UUID customerId,

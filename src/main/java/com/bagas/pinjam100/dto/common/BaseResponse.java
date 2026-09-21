@@ -15,9 +15,16 @@ public class BaseResponse<T> {
     private Object meta;
     private ErrorDetails error;
 
-    public BaseResponse() {}
+    public BaseResponse() {
+    }
 
-    public BaseResponse(Integer statusCode, String message, T data, Object meta, ErrorDetails error) {
+    public BaseResponse(
+            Integer statusCode,
+            String message,
+            T data,
+            Object meta,
+            ErrorDetails error
+    ) {
         this.statusCode = statusCode;
         this.message = message;
         this.data = data;
@@ -25,16 +32,49 @@ public class BaseResponse<T> {
         this.error = error;
     }
 
-    public static <T> BaseResponse<T> success(HttpStatus status, String message, T data) {
-        return new BaseResponse<>(status.value(), message, data, null, null);
+    public static <T> BaseResponse<T> success(
+            HttpStatus status,
+            String message,
+            T data
+    ) {
+        return new BaseResponse<>(
+                status.value(),
+                message,
+                data,
+                null,
+                null
+        );
     }
 
-    public static <T> BaseResponse<T> success(String message, T data) {
-        return new BaseResponse<>(HttpStatus.OK.value(), message, data, null, null);
+    public static <T> BaseResponse<T> success(
+            String message,
+            T data
+    ) {
+        return new BaseResponse<>(
+                HttpStatus.OK.value(),
+                message,
+                data,
+                null,
+                null
+        );
     }
 
-    public static <T> BaseResponse<T> error(HttpStatus status, String message, String errorCode, Object details) {
-        return new BaseResponse<>(status.value(), message, null, null, new ErrorDetails(errorCode, details));
+    public static <T> BaseResponse<T> error(
+            HttpStatus status,
+            String message,
+            String errorCode,
+            Object details
+    ) {
+        return new BaseResponse<>(
+                status.value(),
+                message,
+                null,
+                null,
+                new ErrorDetails(
+                        errorCode,
+                        details
+                )
+        );
     }
 
     public Integer getStatusCode() {
@@ -78,10 +118,17 @@ public class BaseResponse<T> {
     }
 
     public static class ErrorDetails {
+
         private String code;
         private Object details;
 
-        public ErrorDetails(String code, Object details) {
+        public ErrorDetails() {
+        }
+
+        public ErrorDetails(
+                String code,
+                Object details
+        ) {
             this.code = code;
             this.details = details;
         }

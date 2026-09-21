@@ -1,11 +1,11 @@
 package com.bagas.pinjam100.service.dashboard;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.dashboard.CreditAnalystDashboardResponse;
 import com.bagas.pinjam100.dto.dashboard.DashboardResponse;
 import com.bagas.pinjam100.dto.dashboard.DocumentCheckerDashboardResponse;
 import com.bagas.pinjam100.dto.dashboard.MarketingDashboardResponse;
 import com.bagas.pinjam100.dto.dashboard.PaymentDashboardResponse;
-import com.bagas.pinjam100.dto.response.customer.CustomerResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.LoanApplicationResponse;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
@@ -35,8 +35,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    public static final String CACHE_DASHBOARD = "dashboard";
-
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Jakarta");
 
     private final LoanApplicationRepository loanApplicationRepository;
@@ -55,13 +53,11 @@ public class DashboardService {
             case "PAYMENT" -> paymentDashboard();
             case "DOCUMENT_CHECKER" -> documentCheckerDashboard();
             case "CREDIT_ANALYST" -> creditAnalystDashboard();
-            default -> throw new IllegalArgumentException(
-                    "Role tidak memiliki akses dashboard"
-            );
+            default -> throw new IllegalArgumentException("Role tidak memiliki akses dashboard");
         };
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'super_admin'")
+    @Cacheable(cacheNames = CacheNames.CACHE_DASHBOARD, key = "'super_admin'")
     public DashboardResponse superAdminDashboard() {
         LocalDate today = LocalDate.now(ZONE_ID);
 
@@ -69,66 +65,50 @@ public class DashboardService {
                 .withDayOfMonth(1)
                 .atStartOfDay();
 
-        LocalDateTime previousMonthStart = currentMonthStart
-                .minusMonths(1);
-
+        LocalDateTime previousMonthStart = currentMonthStart.minusMonths(1);
         LocalDateTime previousMonthEnd = currentMonthStart;
 
-        long totalRequests =
-                loanApplicationSummaryRepository.countAll();
+        long totalRequests = loanApplicationSummaryRepository.countAll();
 
-        long previousMonthRequests =
-                loanApplicationSummaryRepository.countCreatedBetween(
-                        previousMonthStart,
-                        previousMonthEnd
-                );
+        long previousMonthRequests = loanApplicationSummaryRepository.countCreatedBetween(
+                previousMonthStart,
+                previousMonthEnd
+        );
 
-        BigDecimal totalRequestAmount =
-                loanApplicationSummaryRepository.sumLoanAmount();
+        BigDecimal totalRequestAmount = loanApplicationSummaryRepository.sumLoanAmount();
 
-        BigDecimal previousMonthRequestAmount =
-                loanApplicationSummaryRepository.sumLoanAmountBetween(
-                        previousMonthStart,
-                        previousMonthEnd
-                );
+        BigDecimal previousMonthRequestAmount = loanApplicationSummaryRepository.sumLoanAmountBetween(
+                previousMonthStart,
+                previousMonthEnd
+        );
 
-        long pendingRequests =
-                loanApplicationSummaryRepository.countByStatus(
-                        LoanApplicationStatus.UNDER_REVIEW
-                );
+        long pendingRequests = loanApplicationSummaryRepository.countByStatus(
+                LoanApplicationStatus.UNDER_REVIEW
+        );
 
-        long approvedRequests =
-                loanApplicationSummaryRepository.countByStatus(
-                        LoanApplicationStatus.APPROVED
-                );
+        long approvedRequests = loanApplicationSummaryRepository.countByStatus(
+                LoanApplicationStatus.APPROVED
+        );
 
-        long rejectedRequests =
-                loanApplicationSummaryRepository.countByStatus(
-                        LoanApplicationStatus.REJECTED
-                );
+        long rejectedRequests = loanApplicationSummaryRepository.countByStatus(
+                LoanApplicationStatus.REJECTED
+        );
 
-        long totalCustomers =
-                customerRepository.countByDeletedDateIsNull();
+        long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long previousMonthCustomers =
-                customerRepository.countCreatedBetween(
-                        previousMonthStart,
-                        previousMonthEnd
-                );
+        long previousMonthCustomers = customerRepository.countCreatedBetween(
+                previousMonthStart,
+                previousMonthEnd
+        );
 
-        long overdueLoans =
-                loanApplicationSummaryRepository.countOverdueLoans(today);
+        long overdueLoans = loanApplicationSummaryRepository.countOverdueLoans(today);
 
-        BigDecimal overdueLoanAmount =
-                loanApplicationSummaryRepository.sumOverdueLoanAmount(today);
+        BigDecimal overdueLoanAmount = loanApplicationSummaryRepository.sumOverdueLoanAmount(today);
 
-        double approvalRate =
-                calculateApprovalRate(
-                        approvedRequests,
-                        rejectedRequests
-                );
+        double approvalRate = calculateApprovalRate(approvedRequests, rejectedRequests);
 
-        List<LoanApplicationResponse> recentRequest = loanApplicationRepository.findTop5ByDeletedDateIsNullOrderByCreatedDateDesc()
+        List<LoanApplicationResponse> recentRequest = loanApplicationRepository
+                .findTop5ByDeletedDateIsNullOrderByCreatedDateDesc()
                 .stream()
                 .map(loanApplication -> new LoanApplicationResponse(
                         loanApplication,
@@ -140,44 +120,40 @@ public class DashboardService {
 
         return new DashboardResponse(
                 (int) totalRequests,
-                calculateGrowthRate(
-                        totalRequests,
-                        previousMonthRequests
-                ),
+                calculateGrowthRate(totalRequests, previousMonthRequests),
                 (int) pendingRequests,
                 (int) approvedRequests,
                 approvalRate,
                 totalRequestAmount,
-                calculateGrowthRate(
-                        totalRequestAmount,
-                        previousMonthRequestAmount
-                ),
+                calculateGrowthRate(totalRequestAmount, previousMonthRequestAmount),
                 (int) totalCustomers,
-                calculateGrowthRate(
-                        totalCustomers,
-                        previousMonthCustomers
-                ),
+                calculateGrowthRate(totalCustomers, previousMonthCustomers),
                 (int) overdueLoans,
                 overdueLoanAmount,
                 recentRequest
         );
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'marketing_' + @dashboardService.getAuthUser().getBranch().getId()")
+    @Cacheable(
+            cacheNames = CacheNames.CACHE_DASHBOARD,
+            key = "'marketing_' + @dashboardService.getAuthUser().getBranch().getId()"
+    )
     public MarketingDashboardResponse marketingDashboard() {
-        return branchDashboard(
-                LoanApplicationStatus.UNDER_REVIEW
-        );
+        return branchDashboard(LoanApplicationStatus.UNDER_REVIEW);
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'branch_marketing_' + @dashboardService.getAuthUser().getBranch().getId()")
+    @Cacheable(
+            cacheNames = CacheNames.CACHE_DASHBOARD,
+            key = "'branch_marketing_' + @dashboardService.getAuthUser().getBranch().getId()"
+    )
     public MarketingDashboardResponse branchMarketingDashboard() {
-        return branchDashboard(
-                LoanApplicationStatus.PASS_REVIEW
-        );
+        return branchDashboard(LoanApplicationStatus.PASS_REVIEW);
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'payment_' + @dashboardService.getAuthUser().getBranch().getId()")
+    @Cacheable(
+            cacheNames = CacheNames.CACHE_DASHBOARD,
+            key = "'payment_' + @dashboardService.getAuthUser().getBranch().getId()"
+    )
     public PaymentDashboardResponse paymentDashboard() {
         UUID branchId = getAuthUser().getBranch().getId();
 
@@ -187,32 +163,22 @@ public class DashboardService {
                 .withDayOfMonth(1)
                 .with(LocalTime.MIN);
 
-        LocalDateTime previousMonthStart = currentMonthStart
-                .minusMonths(1);
-
+        LocalDateTime previousMonthStart = currentMonthStart.minusMonths(1);
         LocalDateTime previousMonthEnd = currentMonthStart;
 
-        long totalRequests =
-                loanApplicationBranchSummaryRepository.countAllByBranch(
-                        branchId
-                );
+        long totalRequests = loanApplicationBranchSummaryRepository.countAllByBranch(branchId);
 
-        long approvedRequests =
-                loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                        branchId,
-                        LoanApplicationStatus.APPROVED
-                );
+        long approvedRequests = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
+                branchId,
+                LoanApplicationStatus.APPROVED
+        );
 
-        long pendingDisbursements =
-                loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                        branchId,
-                        LoanApplicationStatus.APPROVED
-                );
+        long pendingDisbursements = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
+                branchId,
+                LoanApplicationStatus.APPROVED
+        );
 
-        BigDecimal totalApprovedAmount =
-                loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(
-                        branchId
-                );
+        BigDecimal totalApprovedAmount = loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(branchId);
 
         BigDecimal previousMonthDisbursementAmount =
                 loanApplicationBranchSummaryRepository.sumLoanAmountCreatedBetweenByBranch(
@@ -221,14 +187,12 @@ public class DashboardService {
                         previousMonthEnd
                 );
 
-        long totalDisbursements =
-                approvedRequests;
+        long totalDisbursements = approvedRequests;
 
-        double totalDisbursementGrowthRate =
-                calculateGrowthRate(
-                        totalApprovedAmount,
-                        previousMonthDisbursementAmount
-                );
+        double totalDisbursementGrowthRate = calculateGrowthRate(
+                totalApprovedAmount,
+                previousMonthDisbursementAmount
+        );
 
         return new PaymentDashboardResponse(
                 (int) totalRequests,
@@ -241,9 +205,7 @@ public class DashboardService {
         );
     }
 
-    private MarketingDashboardResponse branchDashboard(
-            LoanApplicationStatus pendingStatus
-    ) {
+    private MarketingDashboardResponse branchDashboard(LoanApplicationStatus pendingStatus) {
         UUID branchId = getAuthUser().getBranch().getId();
 
         LocalDate today = LocalDate.now(ZONE_ID);
@@ -252,27 +214,18 @@ public class DashboardService {
                 .withDayOfMonth(1)
                 .atStartOfDay();
 
-        LocalDateTime previousMonthStart = currentMonthStart
-                .minusMonths(1);
-
+        LocalDateTime previousMonthStart = currentMonthStart.minusMonths(1);
         LocalDateTime previousMonthEnd = currentMonthStart;
 
-        long totalRequests =
-                loanApplicationBranchSummaryRepository.countAllByBranch(
-                        branchId
-                );
+        long totalRequests = loanApplicationBranchSummaryRepository.countAllByBranch(branchId);
 
-        long previousMonthRequests =
-                loanApplicationBranchSummaryRepository.countCreatedBetweenByBranch(
-                        branchId,
-                        previousMonthStart,
-                        previousMonthEnd
-                );
+        long previousMonthRequests = loanApplicationBranchSummaryRepository.countCreatedBetweenByBranch(
+                branchId,
+                previousMonthStart,
+                previousMonthEnd
+        );
 
-        BigDecimal totalRequestAmount =
-                loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(
-                        branchId
-                );
+        BigDecimal totalRequestAmount = loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(branchId);
 
         BigDecimal previousMonthRequestAmount =
                 loanApplicationBranchSummaryRepository.sumLoanAmountCreatedBetweenByBranch(
@@ -281,46 +234,37 @@ public class DashboardService {
                         previousMonthEnd
                 );
 
-        long pendingRequests =
-                loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                        branchId,
-                        pendingStatus
-                );
+        long pendingRequests = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
+                branchId,
+                pendingStatus
+        );
 
-        long approvedRequests =
-                loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                        branchId,
-                        LoanApplicationStatus.APPROVED
-                );
+        long approvedRequests = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
+                branchId,
+                LoanApplicationStatus.APPROVED
+        );
 
-        long rejectedRequests =
-                loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                        branchId,
-                        LoanApplicationStatus.REJECTED
-                );
+        long rejectedRequests = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
+                branchId,
+                LoanApplicationStatus.REJECTED
+        );
 
-        long totalCustomers =
-                customerRepository.countByDeletedDateIsNull();
+        long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long overdueLoans =
-                loanApplicationBranchSummaryRepository.countOverdueLoansByBranch(
-                        branchId,
-                        today
-                );
+        long overdueLoans = loanApplicationBranchSummaryRepository.countOverdueLoansByBranch(
+                branchId,
+                today
+        );
 
-        BigDecimal overdueLoanAmount =
-                loanApplicationBranchSummaryRepository.sumOverdueLoanAmountByBranch(
-                        branchId,
-                        today
-                );
+        BigDecimal overdueLoanAmount = loanApplicationBranchSummaryRepository.sumOverdueLoanAmountByBranch(
+                branchId,
+                today
+        );
 
-        double approvalRate =
-                calculateApprovalRate(
-                        approvedRequests,
-                        rejectedRequests
-                );
+        double approvalRate = calculateApprovalRate(approvedRequests, rejectedRequests);
 
-        List<LoanApplicationResponse> recentRequest = loanApplicationRepository.findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(branchId)
+        List<LoanApplicationResponse> recentRequest = loanApplicationRepository
+                .findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(branchId)
                 .stream()
                 .map(loanApplication -> new LoanApplicationResponse(
                         loanApplication,
@@ -332,19 +276,13 @@ public class DashboardService {
 
         return new MarketingDashboardResponse(
                 (int) totalRequests,
-                calculateGrowthRate(
-                        totalRequests,
-                        previousMonthRequests
-                ),
+                calculateGrowthRate(totalRequests, previousMonthRequests),
                 (int) pendingRequests,
                 (int) approvedRequests,
                 (int) rejectedRequests,
                 approvalRate,
                 totalRequestAmount.doubleValue(),
-                calculateGrowthRate(
-                        totalRequestAmount,
-                        previousMonthRequestAmount
-                ),
+                calculateGrowthRate(totalRequestAmount, previousMonthRequestAmount),
                 (int) totalCustomers,
                 0D,
                 (int) overdueLoans,
@@ -353,25 +291,21 @@ public class DashboardService {
         );
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'doc_checker'")
+    @Cacheable(cacheNames = CacheNames.CACHE_DASHBOARD, key = "'doc_checker'")
     public DocumentCheckerDashboardResponse documentCheckerDashboard() {
-        long totalCustomers =
-                customerRepository.countByDeletedDateIsNull();
+        long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long pendingVerification =
-                customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                        VerificationStatus.PENDING
-                );
+        long pendingVerification = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
+                VerificationStatus.PENDING
+        );
 
-        long verifiedCustomers =
-                customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                        VerificationStatus.VERIFIED
-                );
+        long verifiedCustomers = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
+                VerificationStatus.VERIFIED
+        );
 
-        long rejectedCustomers =
-                customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                        VerificationStatus.REJECTED
-                );
+        long rejectedCustomers = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
+                VerificationStatus.REJECTED
+        );
 
         return new DocumentCheckerDashboardResponse(
                 (int) totalCustomers,
@@ -382,23 +316,19 @@ public class DashboardService {
         );
     }
 
-    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'credit_analyst'")
+    @Cacheable(cacheNames = CacheNames.CACHE_DASHBOARD, key = "'credit_analyst'")
     public CreditAnalystDashboardResponse creditAnalystDashboard() {
-        long totalCustomers =
-                customerRepository.countByDeletedDateIsNull();
+        long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long verifiedCustomers =
-                customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                        VerificationStatus.VERIFIED
-                );
+        long verifiedCustomers = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
+                VerificationStatus.VERIFIED
+        );
 
-        long pendingLimitAnalysis =
-                customerRepository.countVerifiedAndLimitIsNull(
-                        VerificationStatus.VERIFIED
-                );
+        long pendingLimitAnalysis = customerRepository.countVerifiedAndLimitIsNull(
+                VerificationStatus.VERIFIED
+        );
 
-        long customersWithLimit =
-                verifiedCustomers - pendingLimitAnalysis;
+        long customersWithLimit = verifiedCustomers - pendingLimitAnalysis;
 
         return new CreditAnalystDashboardResponse(
                 (int) totalCustomers,
@@ -409,15 +339,12 @@ public class DashboardService {
         );
     }
 
-    @CacheEvict(cacheNames = CACHE_DASHBOARD, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
     public void clearDashboardCache() {
         // Method helper untuk membersihkan seluruh cache dashboard saat ada mutasi transaksi/pengajuan pinjaman
     }
 
-    private double calculateGrowthRate(
-            long current,
-            long previous
-    ) {
+    private double calculateGrowthRate(long current, long previous) {
         if (previous == 0) {
             return current == 0 ? 0D : 100D;
         }
@@ -425,10 +352,7 @@ public class DashboardService {
         return ((double) (current - previous) / previous) * 100D;
     }
 
-    private double calculateGrowthRate(
-            BigDecimal current,
-            BigDecimal previous
-    ) {
+    private double calculateGrowthRate(BigDecimal current, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
             return current == null || current.compareTo(BigDecimal.ZERO) == 0
                     ? 0D
@@ -437,19 +361,12 @@ public class DashboardService {
 
         return current
                 .subtract(previous)
-                .divide(
-                        previous,
-                        6,
-                        java.math.RoundingMode.HALF_UP
-                )
+                .divide(previous, 6, java.math.RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .doubleValue();
     }
 
-    private double calculateApprovalRate(
-            long approved,
-            long rejected
-    ) {
+    private double calculateApprovalRate(long approved, long rejected) {
         long total = approved + rejected;
 
         if (total == 0) {
@@ -460,40 +377,28 @@ public class DashboardService {
     }
 
     private String getRole() {
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
 
         return authentication
                 .getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
-                .map(authority ->
-                        authority.startsWith("ROLE_")
-                                ? authority.substring(5)
-                                : authority
-                )
+                .map(authority -> authority.startsWith("ROLE_") ? authority.substring(5) : authority)
                 .findFirst()
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Role tidak ditemukan"
-                        )
-                );
+                .orElseThrow(() -> new IllegalArgumentException("Role tidak ditemukan"));
     }
 
     public User getAuthUser() {
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
 
         Object principal = authentication.getPrincipal();
 
         if (!(principal instanceof User user)) {
-            throw new IllegalArgumentException(
-                    "User tidak ditemukan"
-            );
+            throw new IllegalArgumentException("User tidak ditemukan");
         }
 
         return user;

@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.userrolepermission;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.request.userrolepermission.UserRequest;
 import com.bagas.pinjam100.dto.response.userrolepermission.UserResponse;
 import com.bagas.pinjam100.entity.userrolepermission.Role;
@@ -25,14 +26,11 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserService {
 
-    public static final String CACHE_USER = "user";
-    public static final String CACHE_USER_ALL = "user_all";
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Cacheable(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     public List<UserResponse> findAllByDeletedDateIsNull() {
         return userRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -40,14 +38,14 @@ public class UserService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CACHE_USER, key = "#id")
+    @Cacheable(cacheNames = CacheNames.CACHE_USER, key = "#id")
     public UserResponse findByIdAndDeletedDateIsNull(UUID id) {
         User response = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
         return new UserResponse(response);
     }
 
-    @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    @CacheEvict(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     public UserResponse save(UserRequest request) {
         if (userRepository.existsByIdentityNumber(request.getIdentityNumber())) {
             throw new ConflictException("Nomor identitas sudah terdaftar");
@@ -68,8 +66,8 @@ public class UserService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     })
     public UserResponse update(UUID id, UserRequest request) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
@@ -95,8 +93,8 @@ public class UserService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     })
     public UserResponse updateActive(UUID id) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
@@ -108,8 +106,8 @@ public class UserService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     })
     public UserResponse changeRole(UUID id, UUID roleId) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
@@ -125,8 +123,8 @@ public class UserService {
     }
 
     @Caching(evict = {
-            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
-            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
     })
     public UserResponse delete(UUID id) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
