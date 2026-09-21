@@ -24,7 +24,7 @@ public class LimitResponse {
 
     public LimitResponse(CustomerLimit customerLimit) {
         this.id = customerLimit.getId();
-        this.customerId = customerLimit.getCustomer().getId();
+        this.customerId = (customerLimit.getCustomer() != null) ? customerLimit.getCustomer().getId() : null;
         this.creditLimit = customerLimit.getCreditLimit();
         this.availableLimit = customerLimit.getAvailableLimit();
         this.createdDate = customerLimit.getCreatedDate();

@@ -64,7 +64,7 @@ public class JwtService {
                                 : null
                 )
                 .claim("idUser", user.getIdUser())
-                .claim("branch", user.getBranch())
+                .claim("branch", user.getBranch().getId())
                 .issuedAt(Date.from(issuedAt))
                 .signWith(key);
     }

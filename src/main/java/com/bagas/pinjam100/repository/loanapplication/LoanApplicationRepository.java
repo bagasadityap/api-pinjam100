@@ -21,5 +21,6 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     List<LoanApplication> findAllByStatusAndDeletedDateIsNull(LoanApplicationStatus loanApplicationStatus);
 
     List<LoanApplication> findTop5ByDeletedDateIsNullOrderByCreatedDateDesc();
+    List<LoanApplication> findTop5ByStatusAndDeletedDateIsNullOrderByCreatedDateDesc(LoanApplicationStatus status);
     List<LoanApplication> findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(UUID branchId);
 }

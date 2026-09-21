@@ -67,7 +67,6 @@ public class RoleService {
         Role role = roleRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Role tidak ditemukan"));
 
-        // Validasi agar tidak melempar ConflictException jika nama role tidak diubah
         if (!role.getRoleName().equalsIgnoreCase(request.getRoleName()) &&
                 roleRepository.existsByRoleNameAndDeletedDateIsNull(request.getRoleName())) {
             throw new ConflictException("Nama role sudah ada");

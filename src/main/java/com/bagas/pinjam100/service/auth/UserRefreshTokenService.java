@@ -35,22 +35,17 @@ public class UserRefreshTokenService {
 
         String rawToken = generateToken();
 
-        UserRefreshToken refreshToken =
-                new UserRefreshToken();
-
+        UserRefreshToken refreshToken = new UserRefreshToken();
         refreshToken.setUser(user);
-
         refreshToken.setTokenHash(
                 hash(rawToken)
         );
-
         refreshToken.setExpiresAt(
                 Instant.now().plus(
                         refreshTokenTtlDays,
                         ChronoUnit.DAYS
                 )
         );
-
         repository.save(refreshToken);
 
         return rawToken;

@@ -155,7 +155,6 @@ public class DashboardService {
             key = "'payment_' + @dashboardService.getAuthUser().getBranch().getId()"
     )
     public PaymentDashboardResponse paymentDashboard() {
-        UUID branchId = getAuthUser().getBranch().getId();
 
         LocalDateTime now = LocalDateTime.now(ZONE_ID);
 
@@ -164,44 +163,54 @@ public class DashboardService {
                 .with(LocalTime.MIN);
 
         LocalDateTime previousMonthStart = currentMonthStart.minusMonths(1);
-        LocalDateTime previousMonthEnd = currentMonthStart;
 
-        long totalRequests = loanApplicationBranchSummaryRepository.countAllByBranch(branchId);
+        long totalRequests = loanApplicationSummaryRepository.countAll();
 
-        long approvedRequests = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                branchId,
+        long approvedRequests = loanApplicationSummaryRepository.countByStatus(
+                LoanApplicationStatus.DISBURSED
+        );
+
+        long pendingDisbursements = loanApplicationSummaryRepository.countByStatus(
                 LoanApplicationStatus.APPROVED
         );
 
-        long pendingDisbursements = loanApplicationBranchSummaryRepository.countByStatusAndBranch(
-                branchId,
-                LoanApplicationStatus.APPROVED
-        );
-
-        BigDecimal totalApprovedAmount = loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(branchId);
+        BigDecimal totalApprovedAmount = loanApplicationSummaryRepository.sumLoanAmount();
 
         BigDecimal previousMonthDisbursementAmount =
-                loanApplicationBranchSummaryRepository.sumLoanAmountCreatedBetweenByBranch(
-                        branchId,
+                loanApplicationSummaryRepository.sumLoanAmountBetween(
                         previousMonthStart,
-                        previousMonthEnd
+                        currentMonthStart
                 );
 
-        long totalDisbursements = approvedRequests;
+        BigDecimal totalDisbursements = loanApplicationSummaryRepository.sumLoanAmountByStatus(
+                LoanApplicationStatus.DISBURSED
+        );
+        double disbursementsValue = (totalDisbursements != null) ? totalDisbursements.doubleValue() : 0.0;
 
         double totalDisbursementGrowthRate = calculateGrowthRate(
                 totalApprovedAmount,
                 previousMonthDisbursementAmount
         );
 
+        List<LoanApplicationResponse> recentRequest = loanApplicationRepository
+                .findTop5ByStatusAndDeletedDateIsNullOrderByCreatedDateDesc(LoanApplicationStatus.APPROVED)
+                .stream()
+                .map(loanApplication -> new LoanApplicationResponse(
+                        loanApplication,
+                        customerLimitRepository
+                                .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
+                                .orElse(null)
+                ))
+                .toList();
+
         return new PaymentDashboardResponse(
                 (int) totalRequests,
                 (int) approvedRequests,
                 (int) pendingDisbursements,
-                totalApprovedAmount.doubleValue(),
-                (double) totalDisbursements,
+                (totalApprovedAmount != null) ? totalApprovedAmount.doubleValue() : 0.0,
+                disbursementsValue,
                 totalDisbursementGrowthRate,
-                null
+                recentRequest
         );
     }
 
