@@ -72,6 +72,8 @@ public class RedisConfig {
         BasicPolymorphicTypeValidator validator =
                 BasicPolymorphicTypeValidator.builder()
                         .allowIfSubType("com.bagas.pinjam100")
+                        .allowIfSubType("java.util")
+                        .allowIfSubType("java.lang")
                         .build();
 
         objectMapper.activateDefaultTyping(
