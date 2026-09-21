@@ -16,6 +16,8 @@ import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationBranchSummaryRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationSummaryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,9 +31,11 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+@Service("dashboardService")
 @RequiredArgsConstructor
 public class DashboardService {
+
+    public static final String CACHE_DASHBOARD = "dashboard";
 
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Jakarta");
 
@@ -57,7 +61,8 @@ public class DashboardService {
         };
     }
 
-    private DashboardResponse superAdminDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'super_admin'")
+    public DashboardResponse superAdminDashboard() {
         LocalDate today = LocalDate.now(ZONE_ID);
 
         LocalDateTime currentMonthStart = today
@@ -133,7 +138,6 @@ public class DashboardService {
                 ))
                 .toList();
 
-
         return new DashboardResponse(
                 (int) totalRequests,
                 calculateGrowthRate(
@@ -159,19 +163,22 @@ public class DashboardService {
         );
     }
 
-    private MarketingDashboardResponse marketingDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'marketing_' + @dashboardService.getAuthUser().getBranch().getId()")
+    public MarketingDashboardResponse marketingDashboard() {
         return branchDashboard(
                 LoanApplicationStatus.UNDER_REVIEW
         );
     }
 
-    private MarketingDashboardResponse branchMarketingDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'branch_marketing_' + @dashboardService.getAuthUser().getBranch().getId()")
+    public MarketingDashboardResponse branchMarketingDashboard() {
         return branchDashboard(
                 LoanApplicationStatus.PASS_REVIEW
         );
     }
 
-    private PaymentDashboardResponse paymentDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'payment_' + @dashboardService.getAuthUser().getBranch().getId()")
+    public PaymentDashboardResponse paymentDashboard() {
         UUID branchId = getAuthUser().getBranch().getId();
 
         LocalDateTime now = LocalDateTime.now(ZONE_ID);
@@ -346,7 +353,8 @@ public class DashboardService {
         );
     }
 
-    private DocumentCheckerDashboardResponse documentCheckerDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'doc_checker'")
+    public DocumentCheckerDashboardResponse documentCheckerDashboard() {
         long totalCustomers =
                 customerRepository.countByDeletedDateIsNull();
 
@@ -374,7 +382,8 @@ public class DashboardService {
         );
     }
 
-    private CreditAnalystDashboardResponse creditAnalystDashboard() {
+    @Cacheable(cacheNames = CACHE_DASHBOARD, key = "'credit_analyst'")
+    public CreditAnalystDashboardResponse creditAnalystDashboard() {
         long totalCustomers =
                 customerRepository.countByDeletedDateIsNull();
 
@@ -398,6 +407,11 @@ public class DashboardService {
                 (int) customersWithLimit,
                 null
         );
+    }
+
+    @CacheEvict(cacheNames = CACHE_DASHBOARD, allEntries = true)
+    public void clearDashboardCache() {
+        // Method helper untuk membersihkan seluruh cache dashboard saat ada mutasi transaksi/pengajuan pinjaman
     }
 
     private double calculateGrowthRate(
@@ -468,7 +482,7 @@ public class DashboardService {
                 );
     }
 
-    private User getAuthUser() {
+    public User getAuthUser() {
         Authentication authentication =
                 SecurityContextHolder
                         .getContext()

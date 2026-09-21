@@ -8,6 +8,7 @@ import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,9 +20,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class TransactionHistoryService {
+
+    public static final String CACHE_TRANSACTION_HISTORY = "transaction_history";
+
     private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
     private final LoanInstallmentRepository loanInstallmentRepository;
 
+    @Transactional
+    @Cacheable(cacheNames = CACHE_TRANSACTION_HISTORY, key = "#customerId")
     public List<TransactionHistoryResponse> getByCustomerId(UUID customerId) {
 
         List<TransactionHistoryResponse> transactions = new ArrayList<>();

@@ -21,6 +21,9 @@ import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.DocumentRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,10 @@ import java.util.UUID;
 
 @Service
 public class CustomerService {
+
+    public static final String CACHE_CUSTOMER = "customer";
+    public static final String CACHE_CUSTOMER_DETAIL = "customer_detail";
+    public static final String CACHE_CUSTOMER_ALL = "customer_all";
 
     private final CustomerRepository customerRepository;
     private final CustomerDetailRepository customerDetailRepository;
@@ -56,6 +63,7 @@ public class CustomerService {
         this.rekeningRepository = rekeningRepository;
     }
 
+    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'all_active'")
     public List<CustomerResponse> findAllByDeletedDateIsNull() {
         return customerRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -63,6 +71,7 @@ public class CustomerService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'pending'")
     public List<CustomerResponse> findPendingCustomer() {
         return customerRepository
                 .findByVerificationStatus(VerificationStatus.PENDING)
@@ -71,6 +80,7 @@ public class CustomerService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CACHE_CUSTOMER_ALL, key = "'verified_no_limit'")
     public List<CustomerResponse> findVerifiedAndLimitIsNull() {
         return customerRepository
                 .findVerifiedAndLimitIsNull(VerificationStatus.VERIFIED)
@@ -79,10 +89,12 @@ public class CustomerService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CACHE_CUSTOMER, key = "#id")
     public CustomerResponse findByIdAndDeletedDateIsNull(UUID id) {
         return toCustomerResponse(getCustomer(id));
     }
 
+    @Cacheable(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId")
     public CustomerDetailResponse findDetailById(UUID customerId) {
         Customer customer = getCustomer(customerId);
 
@@ -115,6 +127,11 @@ public class CustomerService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+    })
     public CustomerResponse update(UUID id, CustomerRequest request) {
         Customer customer = getCustomer(id);
 
@@ -128,6 +145,11 @@ public class CustomerService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+    })
     public CustomerResponse delete(UUID id) {
         Customer customer = getCustomer(id);
 
@@ -138,6 +160,11 @@ public class CustomerService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+    })
     public CustomerDetailResponse saveOnboarding(
             UUID customerId,
             CustomerOnboardingRequest request
@@ -158,6 +185,11 @@ public class CustomerService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+    })
     public CustomerDetailResponse updateOnboarding(
             UUID customerId,
             CustomerOnboardingRequest request
@@ -172,6 +204,24 @@ public class CustomerService {
         }
 
         customer.setProfileCompleted(true);
+        customerRepository.save(customer);
+
+        return findDetailById(customerId);
+    }
+
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_CUSTOMER, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_DETAIL, key = "#customerId"),
+            @CacheEvict(cacheNames = CACHE_CUSTOMER_ALL, allEntries = true)
+    })
+    public CustomerDetailResponse verifyCustomer(
+            UUID customerId,
+            VerificationStatus verificationStatus
+    ) {
+        Customer customer = getCustomer(customerId);
+
+        customer.setVerificationStatus(verificationStatus);
         customerRepository.save(customer);
 
         return findDetailById(customerId);
@@ -316,18 +366,6 @@ public class CustomerService {
         rekening.setAccountHolder(request.getAccountHolder());
 
         rekeningRepository.save(rekening);
-    }
-
-    @Transactional
-    public CustomerDetailResponse verifyCustomer(
-            UUID customerId,
-            VerificationStatus verificationStatus
-    ) {
-        Customer customer = getCustomer(customerId);
-
-        customer.setVerificationStatus(verificationStatus);
-
-        return findDetailById(customerId);
     }
 
     private Customer getCustomer(UUID customerId) {

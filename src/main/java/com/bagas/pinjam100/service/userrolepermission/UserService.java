@@ -10,11 +10,11 @@ import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,17 +24,15 @@ import java.util.UUID;
 @Transactional
 @AllArgsConstructor
 public class UserService {
+
+    public static final String CACHE_USER = "user";
+    public static final String CACHE_USER_ALL = "user_all";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public List<UserResponse> findAll() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserResponse::new)
-                .toList();
-    }
-
+    @Cacheable(cacheNames = CACHE_USER_ALL, key = "'all_active'")
     public List<UserResponse> findAllByDeletedDateIsNull() {
         return userRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -42,24 +40,17 @@ public class UserService {
                 .toList();
     }
 
-    public UserResponse findById(UUID id) {
-        User response = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
-        return new UserResponse(response);
-    }
-
+    @Cacheable(cacheNames = CACHE_USER, key = "#id")
     public UserResponse findByIdAndDeletedDateIsNull(UUID id) {
         User response = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
         return new UserResponse(response);
     }
 
+    @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
     public UserResponse save(UserRequest request) {
-
         if (userRepository.existsByIdentityNumber(request.getIdentityNumber())) {
-            if (userRepository.existsByIdentityNumber(request.getIdentityNumber())) {
-                throw new ConflictException("Nomor identitas sudah terdaftar");
-            }
+            throw new ConflictException("Nomor identitas sudah terdaftar");
         }
 
         User user = new User();
@@ -69,19 +60,26 @@ public class UserService {
         user.setStatus(true);
         user.setRole(
                 roleRepository.findByIdAndDeletedDateIsNull(UUID.fromString(request.getRole()))
-                        .orElseThrow(() ->
-                                new EntityNotFoundException("Role tidak ditemukan")
-                        )
+                        .orElseThrow(() -> new EntityNotFoundException("Role tidak ditemukan"))
         );
 
         userRepository.save(user);
-
         return new UserResponse(user);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    })
     public UserResponse update(UUID id, UserRequest request) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
+
+        // Validasi nomor identitas hanya jika diubah oleh user
+        if (!user.getIdentityNumber().equals(request.getIdentityNumber()) &&
+                userRepository.existsByIdentityNumber(request.getIdentityNumber())) {
+            throw new ConflictException("Nomor identitas sudah terdaftar");
+        }
 
         user.setName(request.getName());
         user.setIdentityNumber(request.getIdentityNumber());
@@ -96,6 +94,10 @@ public class UserService {
         return new UserResponse(user);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    })
     public UserResponse updateActive(UUID id) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
@@ -104,6 +106,11 @@ public class UserService {
         userRepository.save(user);
         return new UserResponse(user);
     }
+
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    })
     public UserResponse changeRole(UUID id, UUID roleId) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
@@ -117,6 +124,10 @@ public class UserService {
         return new UserResponse(user);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_USER, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_USER_ALL, key = "'all_active'")
+    })
     public UserResponse delete(UUID id) {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));

@@ -4,9 +4,13 @@ import com.bagas.pinjam100.dto.response.installment.LoanInstallmentResponse;
 import com.bagas.pinjam100.entity.installment.InstallmentStatus;
 import com.bagas.pinjam100.entity.installment.LoanInstallment;
 import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
+import com.bagas.pinjam100.service.dashboard.DashboardService;
 import com.bagas.pinjam100.service.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +23,15 @@ import java.util.UUID;
 @Transactional
 public class LoanInstallmentService {
 
+    public static final String CACHE_INSTALLMENT = "installment";
+    public static final String CACHE_INSTALLMENT_APPLICATION = "installment_application";
+    public static final String CACHE_INSTALLMENT_CUSTOMER = "installment_customer";
+
     private final LoanInstallmentRepository loanInstallmentRepository;
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE_INSTALLMENT, key = "#id")
     public LoanInstallmentResponse getById(UUID id) {
         LoanInstallment installment = loanInstallmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Angsuran tidak ditemukan"));
@@ -31,6 +40,7 @@ public class LoanInstallmentService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE_INSTALLMENT_APPLICATION, key = "#loanApplicationId")
     public List<LoanInstallmentResponse> getByLoanApplication_Id(UUID loanApplicationId) {
         return loanInstallmentRepository.findByLoanApplication_Id(loanApplicationId)
                 .stream()
@@ -39,6 +49,7 @@ public class LoanInstallmentService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE_INSTALLMENT_CUSTOMER, key = "#customerId")
     public List<LoanInstallmentResponse> getByCustomerId(UUID customerId) {
         return loanInstallmentRepository.findByLoanApplication_Customer_Id(customerId)
                 .stream()
@@ -46,6 +57,12 @@ public class LoanInstallmentService {
                 .toList();
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_INSTALLMENT, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_INSTALLMENT_APPLICATION, allEntries = true),
+            @CacheEvict(cacheNames = CACHE_INSTALLMENT_CUSTOMER, allEntries = true),
+            @CacheEvict(cacheNames = DashboardService.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanInstallmentResponse pay(UUID id) {
         LoanInstallment loanInstallment = loanInstallmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Angsuran tidak ditemukan"));

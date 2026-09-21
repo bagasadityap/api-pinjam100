@@ -7,6 +7,9 @@ import com.bagas.pinjam100.repository.BranchRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,15 +21,13 @@ import java.util.UUID;
 @Transactional
 @AllArgsConstructor
 public class BranchService {
+
+    public static final String CACHE_BRANCH = "branch";
+    public static final String CACHE_BRANCH_ALL = "branch_all";
+
     private final BranchRepository branchRepository;
 
-    public List<BranchResponse> findAll() {
-        return branchRepository.findAll()
-                .stream()
-                .map(BranchResponse::new)
-                .toList();
-    }
-
+    @Cacheable(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
     public List<BranchResponse> findAllByDeletedDateIsNull() {
         return branchRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -34,18 +35,14 @@ public class BranchService {
                 .toList();
     }
 
-    public BranchResponse findById(UUID id) {
-        Branch response = branchRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"));
-        return new BranchResponse(response);
-    }
-
+    @Cacheable(cacheNames = CACHE_BRANCH, key = "#id")
     public BranchResponse findByIdAndDeletedDateIsNull(UUID id) {
         Branch response = branchRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"));
         return new BranchResponse(response);
     }
 
+    @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
     public BranchResponse save(BranchRequest request) {
         Branch branch = new Branch();
         branch.setName(request.getName());
@@ -57,6 +54,10 @@ public class BranchService {
         return new BranchResponse(branch);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_BRANCH, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+    })
     public BranchResponse update(UUID id, BranchRequest request) {
         Branch branch = branchRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"));
@@ -70,6 +71,10 @@ public class BranchService {
         return new BranchResponse(branch);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CACHE_BRANCH, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_BRANCH_ALL, key = "'all_active'")
+    })
     public BranchResponse delete(UUID id) {
         Branch branch = branchRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"));
@@ -79,4 +84,3 @@ public class BranchService {
         return new BranchResponse(branch);
     }
 }
-
