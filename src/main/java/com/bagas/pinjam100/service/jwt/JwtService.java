@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -73,9 +74,7 @@ public class JwtService {
         return parse(token).get("role", String.class);
     }
 
-    public String getBranch(String token) {
-        return parse(token).get("branch", String.class);
-    }
+    public UUID getBranch(String token) { return parse(token).get("branch", UUID.class); }
 
     public String issueCustomer(Customer customer, Instant issuedAt) {
         return customerBuilder(customer, issuedAt)
