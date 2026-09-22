@@ -85,7 +85,7 @@ public class SecurityConfig {
                                         "style-src 'self' 'unsafe-inline'; " +
                                         "img-src 'self' data: https:; " +
                                         "font-src 'self' data: https:; " +
-                                        "connect-src 'self'; " +
+                                        "connect-src 'self' http://api.pinjam100.bagasaditya.com https://api.pinjam100.bagasaditya.com; " +
                                         "frame-ancestors 'none'; " +
                                         "base-uri 'self'"
                         ))
