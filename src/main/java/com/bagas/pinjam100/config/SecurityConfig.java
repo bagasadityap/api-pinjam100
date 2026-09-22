@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -71,41 +70,7 @@ public class SecurityConfig {
                 """);
     }
 
-    public static final List<String> DOCS_ENDPOINTS = List.of(
-            "/scalar",
-            "/docs",
-            "/v3/api-docs/**",
-            "/scalar/**"
-    );
-
-    private static final String CSP_DOCS =
-            "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
-                    + "img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://proxy.scalar.com https://api.scalar.com;"
-                    + "frame-ancestors 'none'; base-uri 'none'";
-
     @Bean
-    @Order(1)
-    SecurityFilterChain docsFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .securityMatcher(DOCS_ENDPOINTS.toArray(String[]::new))
-                .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp.policyDirectives(CSP_DOCS))
-                        .referrerPolicy(referrer -> referrer.policy(
-                                ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                        .httpStrictTransportSecurity(hsts -> hsts
-                                .includeSubDomains(true)
-                                .maxAgeInSeconds(31536000))
-                        .frameOptions(frame -> frame.deny()))
-                .authorizeHttpRequests(request -> request.anyRequest().permitAll())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .build();
-    }
-
-    @Bean
-    @Order(2)
     SecurityFilterChain securityFilterChain(
             HttpSecurity http
     ) throws AuthenticationException {
@@ -120,7 +85,9 @@ public class SecurityConfig {
                                         "style-src 'self' 'unsafe-inline'; " +
                                         "img-src 'self' data: https:; " +
                                         "font-src 'self' data: https:; " +
-                                        "connect-src 'self' http://api.pinjam100.bagasaditya.com https://api.pinjam100.bagasaditya.com; " +
+                                        "connect-src 'self' " +
+                                        "https://api.pinjam100.bagasaditya.com " +
+                                        "https://proxy.scalar.com; " +
                                         "frame-ancestors 'none'; " +
                                         "base-uri 'self'"
                         ))

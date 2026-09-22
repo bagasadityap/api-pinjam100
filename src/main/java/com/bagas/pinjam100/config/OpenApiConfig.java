@@ -20,7 +20,7 @@ public class OpenApiConfig {
                         .description("REST API for Pinjam100"))
                 .servers(java.util.List.of(
                         new Server()
-                                .url("https://pinjam100.bagasaditya.com/api")
+                                .url("https://api.pinjam100.bagasaditya.com/api")
                                 .description("Production")
                 ))
                 .components(new Components()
