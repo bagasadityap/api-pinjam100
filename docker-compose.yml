@@ -33,6 +33,7 @@ services:
 
     volumes:
       - ./secrets/firebase-credentials.json:/app/secrets/firebase-credentials.json:ro
+      - ./uploads/files:/app/uploads/files
 
     depends_on:
       postgres:
