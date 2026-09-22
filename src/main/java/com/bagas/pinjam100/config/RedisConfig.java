@@ -2,6 +2,8 @@ package com.bagas.pinjam100.config;
 
 import com.bagas.pinjam100.config.prop.AppConfigProperties;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
 import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.resource.DefaultClientResources;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,13 @@ import java.time.Duration;
 public class RedisConfig implements CachingConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
+
+    private static final String[] ALLOWED_TYPE_PACKAGES = {
+            "com.bagas.pinjam100.dto",
+            "com.bagas.pinjam100.entity",
+            "java.util",
+            "java.lang"
+    };
 
     private final AppConfigProperties appConfigProp;
     private final ObjectMapper objectMapper;
@@ -173,7 +182,7 @@ public class RedisConfig implements CachingConfigurer {
     }
 
     private RedisCacheConfiguration baseConfiguration(Duration ttl) {
-        GenericJacksonJsonRedisSerializer serializer = new GenericJacksonJsonRedisSerializer(objectMapper);
+        GenericJacksonJsonRedisSerializer serializer = redisValueSerializer();
 
         RedisCacheConfiguration config = RedisCacheConfiguration
                 .defaultCacheConfig()
@@ -199,13 +208,26 @@ public class RedisConfig implements CachingConfigurer {
         return config;
     }
 
+    private GenericJacksonJsonRedisSerializer redisValueSerializer() {
+        BasicPolymorphicTypeValidator.Builder validatorBuilder = BasicPolymorphicTypeValidator.builder();
+        for (String pkg : ALLOWED_TYPE_PACKAGES) {
+            validatorBuilder.allowIfSubType(pkg);
+        }
+        PolymorphicTypeValidator typeValidator = validatorBuilder.build();
+
+        return GenericJacksonJsonRedisSerializer.builder()
+                .enableDefaultTyping(typeValidator)
+                .customize(mapperBuilder -> mapperBuilder.addModules(objectMapper.registeredModules()))
+                .build();
+    }
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        GenericJacksonJsonRedisSerializer valueSerializer = new GenericJacksonJsonRedisSerializer(objectMapper);
+        GenericJacksonJsonRedisSerializer valueSerializer = redisValueSerializer();
 
         template.setKeySerializer(keySerializer);
         template.setHashKeySerializer(keySerializer);
