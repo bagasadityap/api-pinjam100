@@ -80,9 +80,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'none'; " +
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data: https:; " +
+                                        "font-src 'self' data: https:; " +
+                                        "connect-src 'self'; " +
                                         "frame-ancestors 'none'; " +
-                                        "base-uri 'none'"
+                                        "base-uri 'self'"
                         ))
                         .referrerPolicy(referer -> referer.policy(
                                 ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER
@@ -95,6 +100,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(
+                                "/scalar",
                                 "/docs",
                                 "/v3/api-docs/**",
                                 "/scalar/**",

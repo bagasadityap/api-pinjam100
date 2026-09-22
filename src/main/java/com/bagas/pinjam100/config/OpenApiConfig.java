@@ -3,6 +3,7 @@ package com.bagas.pinjam100.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,11 @@ public class OpenApiConfig {
                         .title("Pinjam100 API")
                         .version("1.0.0")
                         .description("REST API for Pinjam100"))
+                .servers(java.util.List.of(
+                        new Server()
+                                .url("https://pinjam100.bagasaditya.com/api")
+                                .description("Production")
+                ))
                 .components(new Components()
                         .addSecuritySchemes(
                                 "bearerAuth",
