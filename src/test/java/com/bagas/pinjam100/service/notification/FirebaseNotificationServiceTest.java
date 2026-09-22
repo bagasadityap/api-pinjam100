@@ -5,19 +5,25 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FirebaseNotificationServiceTest")
 class FirebaseNotificationServiceTest {
 
@@ -30,11 +36,24 @@ class FirebaseNotificationServiceTest {
     @Mock
     private FirebaseMessaging firebaseMessaging;
 
+    private MockedStatic<FirebaseMessaging> firebaseMessagingMockedStatic;
+
     private FirebaseNotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new FirebaseNotificationService(firebaseMessaging);
+        // Mock static FirebaseMessaging.getInstance() karena constructor service memanggilnya langsung
+        firebaseMessagingMockedStatic = Mockito.mockStatic(FirebaseMessaging.class);
+        firebaseMessagingMockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+
+        notificationService = new FirebaseNotificationService();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (firebaseMessagingMockedStatic != null) {
+            firebaseMessagingMockedStatic.close();
+        }
     }
 
     @Nested

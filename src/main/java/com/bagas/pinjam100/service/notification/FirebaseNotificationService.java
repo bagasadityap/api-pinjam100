@@ -16,8 +16,8 @@ public class FirebaseNotificationService {
 
     private final FirebaseMessaging firebaseMessaging;
 
-    public FirebaseNotificationService(FirebaseMessaging firebaseMessaging) {
-        this.firebaseMessaging = firebaseMessaging;
+    public FirebaseNotificationService() {
+        this.firebaseMessaging = FirebaseMessaging.getInstance();
     }
 
     public void sendToToken(

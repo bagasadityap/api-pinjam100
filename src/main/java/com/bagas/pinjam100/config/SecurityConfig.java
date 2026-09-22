@@ -77,9 +77,7 @@ public class SecurityConfig {
 
         return http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(
-                        corsConfigurationSource()
-                ))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'none'; " +
@@ -108,18 +106,10 @@ public class SecurityConfig {
                         .authenticated()
                 )
                 .exceptionHandling(exception -> exception
-
                         .authenticationEntryPoint(
                                 (request, response, authException) -> {
-
-                                    response.setStatus(
-                                            HttpStatus.UNAUTHORIZED.value()
-                                    );
-
-                                    response.setContentType(
-                                            MediaType.APPLICATION_JSON_VALUE
-                                    );
-
+                                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                                     Map<String, Object> body = Map.of(
                                             "message",
                                             "Silakan melakukan login",
@@ -133,25 +123,14 @@ public class SecurityConfig {
                                             "timestamp",
                                             Instant.now().toString()
                                     );
-
-                                    objectMapper.writeValue(
-                                            response.getOutputStream(),
-                                            body
-                                    );
+                                    objectMapper.writeValue(response.getOutputStream(), body);
                                 }
                         )
 
                         .accessDeniedHandler(
                                 (request, response, accessDeniedException) -> {
-
-                                    response.setStatus(
-                                            HttpStatus.FORBIDDEN.value()
-                                    );
-
-                                    response.setContentType(
-                                            MediaType.APPLICATION_JSON_VALUE
-                                    );
-
+                                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                                     Map<String, Object> body = Map.of(
                                             "message",
                                             "Anda tidak memiliki akses ke resource ini",
@@ -165,11 +144,7 @@ public class SecurityConfig {
                                             "timestamp",
                                             Instant.now().toString()
                                     );
-
-                                    objectMapper.writeValue(
-                                            response.getOutputStream(),
-                                            body
-                                    );
+                                    objectMapper.writeValue(response.getOutputStream(), body);
                                 }
                         )
                 )
@@ -180,23 +155,17 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-                .addFilterBefore(
-                        jwtAuthFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
     PasswordEncoder passwordEncoder() {
-
         String baku = "bcrypt";
-
         Map<String, PasswordEncoder> encoders = Map.of(
                 baku,
                 new BCryptPasswordEncoder(12)
         );
-
         return new DelegatingPasswordEncoder(
                 baku,
                 encoders
@@ -205,42 +174,16 @@ public class SecurityConfig {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration configuration =
-                new CorsConfiguration();
-
-        configuration.setAllowedOrigins(
-                allowedOrigins
-        );
-
-        configuration.setAllowedMethods(
-                List.of(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "PATCH",
-                        "DELETE",
-                        "OPTIONS"
-                )
-        );
-
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(
-                List.of(
-                        "Authorization",
-                        "Content-Type"
-                )
+                List.of("Authorization", "Content-Type")
         );
-
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
