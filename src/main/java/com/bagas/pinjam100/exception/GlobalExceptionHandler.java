@@ -40,6 +40,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return build(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> accessDenied(
+            org.springframework.security.access.AccessDeniedException e) {
+        return build(HttpStatus.FORBIDDEN, "Anda tidak memiliki akses ke resource ini");
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> forbiddenException(ForbiddenException e) {
         return build(HttpStatus.FORBIDDEN, e.getMessage());
