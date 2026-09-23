@@ -71,7 +71,7 @@ public class CustomerService {
     @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, key = "'pending'")
     public List<CustomerResponse> findPendingCustomer() {
         return customerRepository
-                .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(VerificationStatus.PENDING, true)
+                .findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(VerificationStatus.PENDING, true)
                 .stream()
                 .map(this::toCustomerResponse)
                 .toList();

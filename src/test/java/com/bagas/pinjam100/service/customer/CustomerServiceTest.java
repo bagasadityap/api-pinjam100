@@ -121,7 +121,7 @@ class CustomerServiceTest {
             customer.setProfileCompleted(true);
 
             when(customerRepository
-                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                    .findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
                             true
                     ))
@@ -133,7 +133,7 @@ class CustomerServiceTest {
             assertEquals(1, result.size());
 
             verify(customerRepository)
-                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                    .findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
                             true
                     );
@@ -143,7 +143,7 @@ class CustomerServiceTest {
         @DisplayName("should return empty list when no pending customers exist")
         void shouldReturnEmptyList() {
             when(customerRepository
-                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                    .findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
                             true
                     ))
@@ -155,7 +155,7 @@ class CustomerServiceTest {
             assertTrue(result.isEmpty());
 
             verify(customerRepository)
-                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                    .findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
                             true
                     );
