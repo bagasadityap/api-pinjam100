@@ -118,12 +118,12 @@ class CustomerServiceTest {
         void shouldReturnPendingCustomers() {
             Customer customer = createCustomer(CUSTOMER_ID, FULL_NAME);
             customer.setVerificationStatus(VerificationStatus.PENDING);
-            customer.setProfileCompleted(false);
+            customer.setProfileCompleted(true);
 
             when(customerRepository
                     .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
-                            false
+                            true
                     ))
                     .thenReturn(List.of(customer));
 
@@ -135,7 +135,7 @@ class CustomerServiceTest {
             verify(customerRepository)
                     .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
-                            false
+                            true
                     );
         }
 
@@ -145,7 +145,7 @@ class CustomerServiceTest {
             when(customerRepository
                     .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
-                            false
+                            true
                     ))
                     .thenReturn(List.of());
 
@@ -157,7 +157,7 @@ class CustomerServiceTest {
             verify(customerRepository)
                     .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
                             VerificationStatus.PENDING,
-                            false
+                            true
                     );
         }
     }
