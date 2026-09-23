@@ -439,6 +439,7 @@ public class LoanApplicationService {
             loanInstallment.setInstallmentSequence(i + 1);
             loanInstallment.setDueDate(disbursementDate.plusMonths(i + 1L));
             loanInstallment.setInstallmentAmount(loanApplication.getInstallmentAmount());
+            loanInstallment.setPaidAmount(BigDecimal.ZERO);
             loanInstallment.setStatus(InstallmentStatus.UNPAID);
             loanInstallmentRepository.save(loanInstallment);
         }
