@@ -13,12 +13,14 @@ import com.bagas.pinjam100.entity.customer.Customer;
 import com.bagas.pinjam100.entity.customer.CustomerDetail;
 import com.bagas.pinjam100.entity.customer.CustomerLimit;
 import com.bagas.pinjam100.entity.customer.Rekening;
+import com.bagas.pinjam100.entity.installment.LoanInstallment;
 import com.bagas.pinjam100.entity.loanapplication.*;
 import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
+import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationApprovalRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -63,6 +65,8 @@ class LoanApplicationServiceTest {
     private LoanApplicationApprovalRepository loanApplicationApprovalRepository;
     @Mock
     private LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
+    @Mock
+    private LoanInstallmentRepository loanInstallmentRepository;
     @Mock
     private BranchRepository branchRepository;
     @Mock
@@ -581,26 +585,50 @@ class LoanApplicationServiceTest {
     class DisburseTest {
 
         @Test
-        @DisplayName("should disburse loan and send notification successfully")
+        @DisplayName("should disburse loan, create installments and send notification successfully")
         void shouldDisburseSuccessfully() {
             Rekening rekening = new Rekening();
             rekening.setId(UUID.randomUUID());
+
             loanApplication.setStatus(LoanApplicationStatus.APPROVED);
+            loanApplication.setTenorMonths(12);
             loanApplication.setInstallmentAmount(BigDecimal.valueOf(900000));
 
             when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
                     .thenReturn(Optional.of(loanApplication));
+
             when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
                     .thenReturn(Optional.of(rekening));
+
             when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
                     .thenReturn(Optional.of(customerLimit));
 
-            LoanApplicationResponse response = loanApplicationService.disburse(loanId);
+            LoanApplicationResponse response =
+                    loanApplicationService.disburse(loanId);
 
             assertNotNull(response);
-            assertEquals(LoanApplicationStatus.DISBURSED, loanApplication.getStatus());
-            verify(loanApplicationDisbursementRepository).save(any(LoanDisbursement.class));
-            verify(notificationService).sendToCustomer(any(), any(), any(), any(), any());
+            assertEquals(
+                    LoanApplicationStatus.DISBURSED,
+                    loanApplication.getStatus()
+            );
+
+            verify(loanApplicationDisbursementRepository)
+                    .save(any(LoanDisbursement.class));
+
+            verify(loanInstallmentRepository, times(12))
+                    .save(any(LoanInstallment.class));
+
+            verify(notificationService)
+                    .sendToCustomer(
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any()
+                    );
+
+            verify(customerLimitRepository)
+                    .findByCustomer_IdAndDeletedDateIsNull(customerId);
         }
 
         @Test
@@ -609,7 +637,19 @@ class LoanApplicationServiceTest {
             when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
                     .thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class, () -> loanApplicationService.disburse(loanId));
+            assertThrows(
+                    EntityNotFoundException.class,
+                    () -> loanApplicationService.disburse(loanId)
+            );
+
+            verify(loanApplicationDisbursementRepository, never())
+                    .save(any(LoanDisbursement.class));
+
+            verify(loanInstallmentRepository, never())
+                    .save(any(LoanInstallment.class));
+
+            verify(notificationService, never())
+                    .sendToCustomer(any(), any(), any(), any(), any());
         }
     }
 }
