@@ -16,6 +16,7 @@ import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
+import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationApprovalRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -56,6 +57,7 @@ public class LoanApplicationService {
     private final LoanApplicationReviewRepository loanApplicationReviewRepository;
     private final LoanApplicationApprovalRepository loanApplicationApprovalRepository;
     private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
+    private final LoanInstallmentRepository loanInstallmentRepository;
     private final BranchRepository branchRepository;
     private final RekeningRepository rekeningRepository;
     private final AuthService authService;
@@ -438,6 +440,7 @@ public class LoanApplicationService {
             loanInstallment.setDueDate(disbursementDate.plusMonths(i + 1L));
             loanInstallment.setInstallmentAmount(loanApplication.getInstallmentAmount());
             loanInstallment.setStatus(InstallmentStatus.UNPAID);
+            loanInstallmentRepository.save(loanInstallment);
         }
 
         notificationService.sendToCustomer(
