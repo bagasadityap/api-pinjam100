@@ -39,6 +39,10 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             VerificationStatus verificationStatus
     );
 
+    List<Customer> findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+            VerificationStatus verificationStatus, boolean profileCompleted
+    );
+
     List<Customer> findTop5ByDeletedDateIsNullOrderByCreatedDateDesc();
 
     @Query("""

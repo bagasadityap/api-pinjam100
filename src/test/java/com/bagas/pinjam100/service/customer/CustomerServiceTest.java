@@ -118,30 +118,47 @@ class CustomerServiceTest {
         void shouldReturnPendingCustomers() {
             Customer customer = createCustomer(CUSTOMER_ID, FULL_NAME);
             customer.setVerificationStatus(VerificationStatus.PENDING);
+            customer.setProfileCompleted(false);
 
-            when(customerRepository.findByVerificationStatus(VerificationStatus.PENDING))
+            when(customerRepository
+                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                            VerificationStatus.PENDING,
+                            false
+                    ))
                     .thenReturn(List.of(customer));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
-                    .thenReturn(Optional.empty());
 
             List<CustomerResponse> result = customerService.findPendingCustomer();
 
             assertNotNull(result);
             assertEquals(1, result.size());
-            verify(customerRepository).findByVerificationStatus(VerificationStatus.PENDING);
+
+            verify(customerRepository)
+                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                            VerificationStatus.PENDING,
+                            false
+                    );
         }
 
         @Test
         @DisplayName("should return empty list when no pending customers exist")
         void shouldReturnEmptyList() {
-            when(customerRepository.findByVerificationStatus(VerificationStatus.PENDING))
+            when(customerRepository
+                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                            VerificationStatus.PENDING,
+                            false
+                    ))
                     .thenReturn(List.of());
 
             List<CustomerResponse> result = customerService.findPendingCustomer();
 
             assertNotNull(result);
             assertTrue(result.isEmpty());
-            verify(customerRepository).findByVerificationStatus(VerificationStatus.PENDING);
+
+            verify(customerRepository)
+                    .findByVerificationStatusAndIsProfileCompletedAndDeletedDateIsNull(
+                            VerificationStatus.PENDING,
+                            false
+                    );
         }
     }
 
