@@ -239,7 +239,7 @@ public class CustomerAuthService {
                 )
         );
         customer.setVerificationStatus(
-                VerificationStatus.VERIFIED
+                VerificationStatus.PENDING
         );
 
         customerRepository.save(customer);
