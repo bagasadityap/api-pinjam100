@@ -2,9 +2,11 @@ package com.bagas.pinjam100.service.userrolepermission;
 
 import com.bagas.pinjam100.dto.request.userrolepermission.UserRequest;
 import com.bagas.pinjam100.dto.response.userrolepermission.UserResponse;
+import com.bagas.pinjam100.entity.Branch;
 import com.bagas.pinjam100.entity.userrolepermission.Role;
 import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.exception.ConflictException;
+import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.userrolepermission.RoleRepository;
 import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +33,7 @@ class UserServiceTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID ROLE_ID = UUID.randomUUID();
+    private static final UUID BRANCH_ID = UUID.randomUUID();
     private static final String IDENTITY_NUMBER = "1234567890";
     private static final String NEW_IDENTITY_NUMBER = "0987654321";
     private static final String NAME = "Bagas Aditya";
@@ -44,14 +47,13 @@ class UserServiceTest {
     private RoleRepository roleRepository;
 
     @Mock
+    private BranchRepository branchRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
-
-    // =========================================================
-    // FIND ALL BY DELETED DATE IS NULL
-    // =========================================================
 
     @Nested
     @DisplayName("findAllByDeletedDateIsNull")
@@ -91,10 +93,6 @@ class UserServiceTest {
         }
     }
 
-    // =========================================================
-    // FIND BY ID AND DELETED DATE IS NULL
-    // =========================================================
-
     @Nested
     @DisplayName("findByIdAndDeletedDateIsNull")
     class FindByIdAndDeletedDateIsNullTest {
@@ -132,10 +130,6 @@ class UserServiceTest {
         }
     }
 
-    // =========================================================
-    // SAVE
-    // =========================================================
-
     @Nested
     @DisplayName("save")
     class SaveTest {
@@ -143,8 +137,9 @@ class UserServiceTest {
         @Test
         @DisplayName("should create user successfully when request is valid")
         void shouldSaveUserSuccessfully() {
-            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString());
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString(), BRANCH_ID.toString());
             Role role = createRole(ROLE_ID);
+            Branch branch = createBranch(BRANCH_ID);
 
             when(userRepository.existsByIdentityNumber(request.getIdentityNumber()))
                     .thenReturn(false);
@@ -152,6 +147,8 @@ class UserServiceTest {
                     .thenReturn(ENCODED_PASSWORD);
             when(roleRepository.findByIdAndDeletedDateIsNull(ROLE_ID))
                     .thenReturn(Optional.of(role));
+            when(branchRepository.findByIdAndDeletedDateIsNull(BRANCH_ID))
+                    .thenReturn(Optional.of(branch));
             when(userRepository.save(any(User.class)))
                     .thenAnswer(invocation -> {
                         User savedUser = invocation.getArgument(0);
@@ -168,13 +165,14 @@ class UserServiceTest {
             verify(userRepository).existsByIdentityNumber(request.getIdentityNumber());
             verify(passwordEncoder).encode(request.getPassword());
             verify(roleRepository).findByIdAndDeletedDateIsNull(ROLE_ID);
+            verify(branchRepository).findByIdAndDeletedDateIsNull(BRANCH_ID);
             verify(userRepository).save(any(User.class));
         }
 
         @Test
         @DisplayName("should throw ConflictException when identity number already exists")
         void shouldThrowExceptionWhenIdentityNumberExists() {
-            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString());
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString(), BRANCH_ID.toString());
 
             when(userRepository.existsByIdentityNumber(request.getIdentityNumber()))
                     .thenReturn(true);
@@ -194,7 +192,7 @@ class UserServiceTest {
         @Test
         @DisplayName("should throw EntityNotFoundException when role is not found")
         void shouldThrowExceptionWhenRoleNotFound() {
-            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString());
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString(), BRANCH_ID.toString());
 
             when(userRepository.existsByIdentityNumber(request.getIdentityNumber()))
                     .thenReturn(false);
@@ -211,11 +209,31 @@ class UserServiceTest {
             assertEquals("Role tidak ditemukan", exception.getMessage());
             verify(userRepository, never()).save(any());
         }
-    }
 
-    // =========================================================
-    // UPDATE
-    // =========================================================
+        @Test
+        @DisplayName("should throw EntityNotFoundException when branch is not found")
+        void shouldThrowExceptionWhenBranchNotFound() {
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString(), BRANCH_ID.toString());
+            Role role = createRole(ROLE_ID);
+
+            when(userRepository.existsByIdentityNumber(request.getIdentityNumber()))
+                    .thenReturn(false);
+            when(passwordEncoder.encode(request.getPassword()))
+                    .thenReturn(ENCODED_PASSWORD);
+            when(roleRepository.findByIdAndDeletedDateIsNull(ROLE_ID))
+                    .thenReturn(Optional.of(role));
+            when(branchRepository.findByIdAndDeletedDateIsNull(BRANCH_ID))
+                    .thenReturn(Optional.empty());
+
+            EntityNotFoundException exception = assertThrows(
+                    EntityNotFoundException.class,
+                    () -> userService.save(request)
+            );
+
+            assertEquals("Cabang tidak ditemukan", exception.getMessage());
+            verify(userRepository, never()).save(any());
+        }
+    }
 
     @Nested
     @DisplayName("update")
@@ -225,8 +243,9 @@ class UserServiceTest {
         @DisplayName("should update user successfully without identity number conflict check when unchanged")
         void shouldUpdateUserSuccessfullyWhenIdentityUnchanged() {
             User user = createUser(USER_ID, IDENTITY_NUMBER, NAME);
-            UserRequest request = createUserRequest(IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString());
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString(), BRANCH_ID.toString());
             Role role = createRole(ROLE_ID);
+            Branch branch = createBranch(BRANCH_ID);
 
             when(userRepository.findByIdAndDeletedDateIsNull(USER_ID))
                     .thenReturn(Optional.of(user));
@@ -234,6 +253,8 @@ class UserServiceTest {
                     .thenReturn(ENCODED_PASSWORD);
             when(roleRepository.findByIdAndDeletedDateIsNull(ROLE_ID))
                     .thenReturn(Optional.of(role));
+            when(branchRepository.findByIdAndDeletedDateIsNull(BRANCH_ID))
+                    .thenReturn(Optional.of(branch));
             when(userRepository.save(any(User.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -243,6 +264,7 @@ class UserServiceTest {
             assertEquals("Bagas Updated", result.getName());
 
             verify(userRepository, never()).existsByIdentityNumber(any());
+            verify(branchRepository).findByIdAndDeletedDateIsNull(BRANCH_ID);
             verify(userRepository).save(user);
         }
 
@@ -250,8 +272,9 @@ class UserServiceTest {
         @DisplayName("should update user successfully when identity number changed and unique")
         void shouldUpdateUserSuccessfullyWhenIdentityChanged() {
             User user = createUser(USER_ID, IDENTITY_NUMBER, NAME);
-            UserRequest request = createUserRequest(NEW_IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString());
+            UserRequest request = createUserRequest(NEW_IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString(), BRANCH_ID.toString());
             Role role = createRole(ROLE_ID);
+            Branch branch = createBranch(BRANCH_ID);
 
             when(userRepository.findByIdAndDeletedDateIsNull(USER_ID))
                     .thenReturn(Optional.of(user));
@@ -261,6 +284,8 @@ class UserServiceTest {
                     .thenReturn(ENCODED_PASSWORD);
             when(roleRepository.findByIdAndDeletedDateIsNull(ROLE_ID))
                     .thenReturn(Optional.of(role));
+            when(branchRepository.findByIdAndDeletedDateIsNull(BRANCH_ID))
+                    .thenReturn(Optional.of(branch));
             when(userRepository.save(any(User.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -270,6 +295,7 @@ class UserServiceTest {
             assertEquals(NEW_IDENTITY_NUMBER, user.getIdentityNumber());
 
             verify(userRepository).existsByIdentityNumber(NEW_IDENTITY_NUMBER);
+            verify(branchRepository).findByIdAndDeletedDateIsNull(BRANCH_ID);
             verify(userRepository).save(user);
         }
 
@@ -277,7 +303,7 @@ class UserServiceTest {
         @DisplayName("should throw ConflictException when changed identity number already exists")
         void shouldThrowExceptionWhenNewIdentityNumberExists() {
             User user = createUser(USER_ID, IDENTITY_NUMBER, NAME);
-            UserRequest request = createUserRequest(NEW_IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString());
+            UserRequest request = createUserRequest(NEW_IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString(), BRANCH_ID.toString());
 
             when(userRepository.findByIdAndDeletedDateIsNull(USER_ID))
                     .thenReturn(Optional.of(user));
@@ -296,7 +322,7 @@ class UserServiceTest {
         @Test
         @DisplayName("should throw EntityNotFoundException when user to update is not found")
         void shouldThrowExceptionWhenUserToUpdateNotFound() {
-            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString());
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, NAME, ROLE_ID.toString(), BRANCH_ID.toString());
 
             when(userRepository.findByIdAndDeletedDateIsNull(USER_ID))
                     .thenReturn(Optional.empty());
@@ -309,11 +335,32 @@ class UserServiceTest {
             assertEquals("User tidak ditemukan", exception.getMessage());
             verify(userRepository, never()).save(any());
         }
-    }
 
-    // =========================================================
-    // UPDATE ACTIVE
-    // =========================================================
+        @Test
+        @DisplayName("should throw EntityNotFoundException when branch to update is not found")
+        void shouldThrowExceptionWhenBranchToUpdateNotFound() {
+            User user = createUser(USER_ID, IDENTITY_NUMBER, NAME);
+            UserRequest request = createUserRequest(IDENTITY_NUMBER, "Bagas Updated", ROLE_ID.toString(), BRANCH_ID.toString());
+            Role role = createRole(ROLE_ID);
+
+            when(userRepository.findByIdAndDeletedDateIsNull(USER_ID))
+                    .thenReturn(Optional.of(user));
+            when(passwordEncoder.encode(request.getPassword()))
+                    .thenReturn(ENCODED_PASSWORD);
+            when(roleRepository.findByIdAndDeletedDateIsNull(ROLE_ID))
+                    .thenReturn(Optional.of(role));
+            when(branchRepository.findByIdAndDeletedDateIsNull(BRANCH_ID))
+                    .thenReturn(Optional.empty());
+
+            EntityNotFoundException exception = assertThrows(
+                    EntityNotFoundException.class,
+                    () -> userService.update(USER_ID, request)
+            );
+
+            assertEquals("Cabang tidak ditemukan", exception.getMessage());
+            verify(userRepository, never()).save(any());
+        }
+    }
 
     @Nested
     @DisplayName("updateActive")
@@ -353,10 +400,6 @@ class UserServiceTest {
             verify(userRepository, never()).save(any());
         }
     }
-
-    // =========================================================
-    // CHANGE ROLE
-    // =========================================================
 
     @Nested
     @DisplayName("changeRole")
@@ -407,10 +450,6 @@ class UserServiceTest {
         }
     }
 
-    // =========================================================
-    // DELETE
-    // =========================================================
-
     @Nested
     @DisplayName("delete")
     class DeleteTest {
@@ -450,10 +489,6 @@ class UserServiceTest {
         }
     }
 
-    // =========================================================
-    // HELPER METHODS
-    // =========================================================
-
     private User createUser(UUID id, String identityNumber, String name) {
         User user = new User();
         user.setId(id);
@@ -462,6 +497,7 @@ class UserServiceTest {
         user.setPassword(ENCODED_PASSWORD);
         user.setStatus(true);
         user.setRole(createRole(ROLE_ID));
+        user.setBranch(createBranch(BRANCH_ID));
         return user;
     }
 
@@ -472,13 +508,21 @@ class UserServiceTest {
         return role;
     }
 
-    private UserRequest createUserRequest(String identityNumber, String name, String roleId) {
+    private Branch createBranch(UUID branchId) {
+        Branch branch = new Branch();
+        branch.setId(branchId);
+        branch.setName("Pusat");
+        return branch;
+    }
+
+    private UserRequest createUserRequest(String identityNumber, String name, String roleId, String branchId) {
         UserRequest request = new UserRequest();
         request.setIdentityNumber(identityNumber);
         request.setName(name);
         request.setPassword(RAW_PASSWORD);
         request.setStatus(true);
         request.setRole(roleId);
+        request.setBranch(branchId);
         return request;
     }
 }

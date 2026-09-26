@@ -15,4 +15,5 @@ public class UserRequest {
     private String password;
     private Boolean status;
     private String role;
+    private String branch;
 }

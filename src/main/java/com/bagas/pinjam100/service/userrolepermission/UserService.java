@@ -6,6 +6,7 @@ import com.bagas.pinjam100.dto.response.userrolepermission.UserResponse;
 import com.bagas.pinjam100.entity.userrolepermission.Role;
 import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.exception.ConflictException;
+import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.userrolepermission.RoleRepository;
 import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,6 +29,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Cacheable(cacheNames = CacheNames.CACHE_USER_ALL, key = "'all_active'")
@@ -60,7 +62,10 @@ public class UserService {
                 roleRepository.findByIdAndDeletedDateIsNull(UUID.fromString(request.getRole()))
                         .orElseThrow(() -> new EntityNotFoundException("Role tidak ditemukan"))
         );
-
+        user.setBranch(
+                branchRepository.findByIdAndDeletedDateIsNull(UUID.fromString(request.getBranch()))
+                        .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"))
+        );
         userRepository.save(user);
         return new UserResponse(user);
     }
@@ -73,7 +78,6 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("User tidak ditemukan"));
 
-        // Validasi nomor identitas hanya jika diubah oleh user
         if (!user.getIdentityNumber().equals(request.getIdentityNumber()) &&
                 userRepository.existsByIdentityNumber(request.getIdentityNumber())) {
             throw new ConflictException("Nomor identitas sudah terdaftar");
@@ -86,6 +90,10 @@ public class UserService {
         user.setRole(
                 roleRepository.findByIdAndDeletedDateIsNull(UUID.fromString(request.getRole()))
                         .orElseThrow(() -> new EntityNotFoundException("Role tidak ditemukan"))
+        );
+        user.setBranch(
+                branchRepository.findByIdAndDeletedDateIsNull(UUID.fromString(request.getBranch()))
+                        .orElseThrow(() -> new EntityNotFoundException("Cabang tidak ditemukan"))
         );
         userRepository.save(user);
 
