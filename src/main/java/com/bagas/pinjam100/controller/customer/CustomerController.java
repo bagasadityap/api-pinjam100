@@ -117,7 +117,6 @@ public class CustomerController {
                     )
             )
     })
-    @PreAuthorize("hasAuthority('customer:read')")
     @GetMapping("/{id}")
     public ResponseEntity<BaseResponse<CustomerResponse>> getById(
             @PathVariable UUID id
