@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.dto.auth;
 
+import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,4 +15,5 @@ public class CustomerAuthUserResponse {
     private String email;
     private String phoneNumber;
     private boolean profileCompleted;
+    private VerificationStatus verificationStatus;
 }

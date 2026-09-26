@@ -267,7 +267,8 @@ public class CustomerAuthService {
                         customer.getFullName(),
                         customer.getEmail(),
                         customer.getPhoneNumber(),
-                        customer.isProfileCompleted()
+                        customer.isProfileCompleted(),
+                        customer.getVerificationStatus()
                 );
 
         CustomerAuthResponse response =
@@ -386,7 +387,8 @@ public class CustomerAuthService {
                         customer.getFullName(),
                         customer.getEmail(),
                         customer.getPhoneNumber(),
-                        customer.isProfileCompleted()
+                        customer.isProfileCompleted(),
+                        customer.getVerificationStatus()
                 );
 
         CustomerAuthResponse response =
@@ -433,7 +435,8 @@ public class CustomerAuthService {
                 customer.getFullName(),
                 customer.getEmail(),
                 customer.getPhoneNumber(),
-                customer.isProfileCompleted()
+                customer.isProfileCompleted(),
+                customer.getVerificationStatus()
         );
 
         CustomerAuthResponse response = new CustomerAuthResponse(

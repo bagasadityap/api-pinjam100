@@ -376,7 +376,7 @@ class CustomerAuthServiceTest {
     class VerifyOtpTest {
 
         @Test
-        @DisplayName("should verify OTP and complete registration successfully")
+        @DisplayName("should verify OTP and complete registration successfully with PENDING verification status")
         void shouldVerifyOtpSuccessfully() {
             VerifyOtpRequest request = new VerifyOtpRequest(PHONE_NUMBER, OTP_CODE);
             PendingCustomerRegistration pending = createPendingRegistration();
@@ -409,7 +409,7 @@ class CustomerAuthServiceTest {
             verify(otpVerificationService).verify(PHONE_NUMBER, OTP_CODE);
             verify(customerRepository).save(argThat(c ->
                     c.getPhoneNumber().equals(PHONE_NUMBER) &&
-                            c.getVerificationStatus() == VerificationStatus.VERIFIED
+                            c.getVerificationStatus() == VerificationStatus.PENDING
             ));
             verify(customerRegistrationService).delete(PHONE_NUMBER);
         }
