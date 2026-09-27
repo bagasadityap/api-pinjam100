@@ -1,0 +1,249 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - development
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          TZ: Asia/Jakarta
+          PGTZ: Asia/Jakarta
+          POSTGRES_DB: pinjam100_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d pinjam100_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      TZ: Asia/Jakarta
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Jakarta
+
+      APPLICATION_NAME: bagas.pinjam100
+
+      # PostgreSQL khusus CI
+      DB_URL: jdbc:postgresql://localhost:5432/pinjam100_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_SCHEMA: loan
+
+      # Redis khusus CI
+      SPRING_DATA_REDIS_HOST: localhost
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # Test secrets
+      JWT_SECRET: ci-test-secret-0123456789-abcdefghijklmnopqrstuvwxyz
+      DEMO_PASSWORD: ci-demo-password
+      CRYPTO_KEY: ci-test-crypto-key-0123456789-abcdefghijklmnopqrstuvwxyz
+      FLOWKIRIM_API_TOKEN: ci-test-token
+      FLOWKIRIM_DEVICE_ID: ci-test-device
+      MAIL_USERNAME: test@example.com
+      MAIL_PASSWORD: ci-test-password
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Grant execute permission for Maven Wrapper
+        run: chmod +x mvnw
+
+      - name: Initialize PostgreSQL schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql \
+            --host localhost \
+            --port 5432 \
+            --username postgres \
+            --dbname pinjam100_test \
+            --command "CREATE SCHEMA IF NOT EXISTS loan;"
+
+      - name: Build and test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+          SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: loan
+        run: ./mvnw clean verify
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/api-pinjam100:development \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/api-pinjam100:development
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+
+    environment: deployment
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          # GitHub Actions token: used to download docker-compose.yml
+          GH_TOKEN: ${{ github.token }}
+
+          # PAT: used by Docker to pull the private GHCR image
+          GHCR_USERNAME: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+          APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          FLOWKIRIM_BASE_URL: ${{ secrets.FLOWKIRIM_BASE_URL }}
+          FLOWKIRIM_API_TOKEN: ${{ secrets.FLOWKIRIM_API_TOKEN }}
+          FLOWKIRIM_DEVICE_ID: ${{ secrets.FLOWKIRIM_DEVICE_ID }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_USERNAME: ${{ secrets.REDIS_USERNAME }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+
+          envs: >-
+            GH_TOKEN,
+            GHCR_USERNAME,
+            GHCR_TOKEN,
+            APPLICATION_NAME,
+            DB_USERNAME,
+            DB_PASSWORD,
+            JWT_SECRET,
+            FLOWKIRIM_BASE_URL,
+            FLOWKIRIM_API_TOKEN,
+            FLOWKIRIM_DEVICE_ID,
+            MAIL_USERNAME,
+            MAIL_PASSWORD,
+            GOOGLE_APPLICATION_CREDENTIALS,
+            REDIS_HOST,
+            REDIS_PORT,
+            REDIS_USERNAME,
+            REDIS_PASSWORD
+
+          script: |
+            set -euo pipefail
+            
+            echo "======================================"
+            echo "Deploying api-pinjam100 Stack via Docker Compose"
+            echo "======================================"
+            
+            CD_PATH="/opt/api-pinjam100"
+            SECRET_DIR="$CD_PATH/secrets"
+            SECRET_FILE="$SECRET_DIR/firebase-credentials.json"
+            COMPOSE_FILE="$CD_PATH/docker-compose.yml"
+            
+            sudo mkdir -p "$CD_PATH" "$SECRET_DIR"
+            
+            echo "Downloading latest docker-compose.yml..."
+            sudo curl --fail -sSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github.raw+json" \
+              -o "$COMPOSE_FILE" \
+              "https://api.github.com/repos/${{ github.repository }}/contents/docker-compose.yml?ref=${{ github.sha }}"
+            
+            echo "Writing Firebase credentials..."
+            printf '%s' "$GOOGLE_APPLICATION_CREDENTIALS" | sudo tee "$SECRET_FILE.tmp" > /dev/null
+            sudo chmod 600 "$SECRET_FILE.tmp"
+            sudo mv -f "$SECRET_FILE.tmp" "$SECRET_FILE"
+            
+            echo "Writing .env file..."
+            cat <<EOF | sudo tee "$CD_PATH/.env" > /dev/null
+            APPLICATION_NAME=$APPLICATION_NAME
+            POSTGRES_PASSWORD=$DB_PASSWORD
+            DB_USERNAME=$DB_USERNAME
+            JWT_SECRET=$JWT_SECRET
+            FLOWKIRIM_BASE_URL=$FLOWKIRIM_BASE_URL
+            FLOWKIRIM_API_TOKEN=$FLOWKIRIM_API_TOKEN
+            FLOWKIRIM_DEVICE_ID=$FLOWKIRIM_DEVICE_ID
+            MAIL_USERNAME=$MAIL_USERNAME
+            MAIL_PASSWORD=$MAIL_PASSWORD
+            REDIS_HOST=$REDIS_HOST
+            REDIS_PORT=$REDIS_PORT
+            REDIS_USERNAME=$REDIS_USERNAME
+            REDIS_PASSWORD=$REDIS_PASSWORD
+            EOF
+            
+            cd "$CD_PATH"
+            
+            echo "Pulling latest image..."
+            sudo docker compose -f "$COMPOSE_FILE" pull api
+            
+            echo "Removing any conflicting old containers if present..."
+            sudo docker rm -f api-pinjam100 api-pinjam100-postgres api-pinjam100-redis 2>/dev/null || true
+            
+            echo "Starting updated containers..."
+            sudo docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+            
+            echo "======================================"
+            echo "Ensuring 'loan' Schema Exists"
+            echo "======================================"
+            echo "Waiting for PostgreSQL container to be healthy..."
+            until [ "$(sudo docker inspect --format='{{json .State.Health.Status}}' $(sudo docker compose -f "$COMPOSE_FILE" ps -q postgres))" = '"healthy"' ]; do
+              sleep 2
+            done
+            
+            POSTGRES_CONTAINER=$(sudo docker compose -f "$COMPOSE_FILE" ps -q postgres)
+            sudo docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USERNAME" -d pinjam100 -c "CREATE SCHEMA IF NOT EXISTS loan;"
+            
+            echo "======================================"
+            echo "Container Status"
+            echo "======================================"
+            sudo docker compose -f "$COMPOSE_FILE" ps
+            
+            echo "======================================"
+            echo "Application Logs"
+            echo "======================================"
+            sudo docker compose -f "$COMPOSE_FILE" logs --tail=50 api

@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface RoleRepository extends JpaRepository<Role, UUID> {
     Optional<Role> findByIdAndDeletedDateIsNull(UUID id);
     List<Role> findAllByDeletedDateIsNull();
+    boolean existsByRoleNameAndDeletedDateIsNull(String roleName);
 }

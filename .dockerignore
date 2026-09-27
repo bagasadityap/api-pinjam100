@@ -1,0 +1,15 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+
+.env
+.env.*
+secrets/
+
+README.md
+
+firebase-credentials.json
+**/firebase-credentials.json

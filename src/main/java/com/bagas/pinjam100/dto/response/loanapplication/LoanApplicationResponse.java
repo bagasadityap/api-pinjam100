@@ -22,6 +22,7 @@ public class LoanApplicationResponse {
     private CustomerResponse customer;
     private BranchResponse branch;
     private BigDecimal loanAmount;
+    private BigDecimal installmentAmount;
     private Integer tenorMonths;
     private BigDecimal interestRate;
     private String purpose;
@@ -35,6 +36,7 @@ public class LoanApplicationResponse {
         this.id = loanApplication.getId();
         this.applicationId = loanApplication.getApplicationId();
         this.loanAmount = loanApplication.getLoanAmount();
+        this.installmentAmount = loanApplication.getInstallmentAmount();
         this.tenorMonths = loanApplication.getTenorMonths();
         this.interestRate = loanApplication.getInterestRate();
         this.purpose = loanApplication.getPurpose();

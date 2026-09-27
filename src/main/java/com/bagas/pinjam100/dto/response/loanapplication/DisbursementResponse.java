@@ -15,6 +15,7 @@ import java.util.UUID;
 public class DisbursementResponse {
     private UUID id;
     private UUID loanApplicationId;
+    private String transactionReference;
     private BigDecimal disbursementAmount;
     private LocalDateTime createdDate;
     private Rekening rekening;
@@ -22,6 +23,7 @@ public class DisbursementResponse {
     public DisbursementResponse(LoanDisbursement disbursement) {
         this.id = disbursement.getId();
         this.loanApplicationId = disbursement.getLoanApplication().getId();
+        this.transactionReference = disbursement.getTransactionReference();
         this.disbursementAmount = disbursement.getDisbursementAmount();
         this.createdDate = disbursement.getCreatedDate();
         this.rekening = disbursement.getRekening();

@@ -44,6 +44,7 @@ public class AppUserDetailsService implements UserDetailsService {
         appUser.setPassword(user.getPassword());
         appUser.setStatus(Boolean.TRUE.equals(user.getStatus()));
         appUser.setRole(user.getRole());
+        appUser.setBranch(user.getBranch());
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 

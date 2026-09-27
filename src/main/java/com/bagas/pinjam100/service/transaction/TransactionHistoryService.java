@@ -1,13 +1,15 @@
 package com.bagas.pinjam100.service.transaction;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.dto.response.transaction.TransactionHistoryResponse;
 import com.bagas.pinjam100.entity.installment.InstallmentStatus;
 import com.bagas.pinjam100.entity.installment.LoanInstallment;
 import com.bagas.pinjam100.entity.loanapplication.LoanDisbursement;
 import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
-import com.bagas.pinjam100.service.loanapplication.LoanDisbursementRepository;
+import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,14 +21,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class TransactionHistoryService {
-    private final LoanDisbursementRepository loanDisbursementRepository;
+
+    private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
     private final LoanInstallmentRepository loanInstallmentRepository;
 
+    @Transactional
+    @Cacheable(cacheNames = CacheNames.CACHE_TRANSACTION_HISTORY, key = "#customerId")
     public List<TransactionHistoryResponse> getByCustomerId(UUID customerId) {
-
         List<TransactionHistoryResponse> transactions = new ArrayList<>();
 
-        loanDisbursementRepository
+        loanApplicationDisbursementRepository
                 .findByLoanApplication_Customer_Id(customerId)
                 .stream()
                 .map(this::mapDisbursement)

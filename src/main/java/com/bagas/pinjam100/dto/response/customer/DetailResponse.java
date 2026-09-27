@@ -28,7 +28,6 @@ public class DetailResponse {
 
     public DetailResponse(CustomerDetail response) {
         this.id = response.getId();
-        this.nationalId = response.getNationalId();
         this.birthDate = response.getBirthDate();
         this.placeOfBirth = response.getPlaceOfBirth();
         this.gender = response.getGender();

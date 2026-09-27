@@ -19,7 +19,6 @@ public class OtpVerificationService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final OtpVerificationRepository otpVerificationRepository;
-    private final FlowKirimService flowKirimService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -39,11 +38,6 @@ public class OtpVerificationService {
                 .build();
 
         otpVerificationRepository.save(otpVerification);
-
-        String response = flowKirimService.sendOtp(
-                phoneNumber,
-                otpCode
-        );
 
         return otpCode;
     }

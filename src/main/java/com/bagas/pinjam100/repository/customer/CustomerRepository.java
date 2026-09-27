@@ -29,10 +29,18 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             String email
     );
 
+    boolean existsByNationalIdAndDeletedDateIsNull(
+            String nationalId
+    );
+
     Optional<Customer> findByEmail(String email);
 
     List<Customer> findByVerificationStatus(
             VerificationStatus verificationStatus
+    );
+
+    List<Customer> findByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
+            VerificationStatus verificationStatus, boolean profileCompleted
     );
 
     List<Customer> findTop5ByDeletedDateIsNullOrderByCreatedDateDesc();

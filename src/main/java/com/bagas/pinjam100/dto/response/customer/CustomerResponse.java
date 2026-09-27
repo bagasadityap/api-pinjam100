@@ -19,6 +19,7 @@ public class CustomerResponse {
 
     private UUID id;
     private String customerNumber;
+    private String nationalId;
     private String fullName;
     private String email;
     private String phoneNumber;
@@ -29,6 +30,7 @@ public class CustomerResponse {
     public CustomerResponse(Customer customer, CustomerLimit customerLimit) {
         this.id = customer.getId();
         this.customerNumber = customer.getCustomerNumber();
+        this.nationalId = customer.getNationalId();
         this.fullName = customer.getFullName();
         this.email = customer.getEmail();
         this.phoneNumber = customer.getPhoneNumber();

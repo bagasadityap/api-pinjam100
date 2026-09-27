@@ -1,5 +1,6 @@
 package com.bagas.pinjam100.service.loanapplication;
 
+import com.bagas.pinjam100.config.CacheNames;
 import com.bagas.pinjam100.config.loan.LoanConfig;
 import com.bagas.pinjam100.dto.request.loanapplication.ApprovalRequest;
 import com.bagas.pinjam100.dto.request.loanapplication.DisbursementRequest;
@@ -15,6 +16,7 @@ import com.bagas.pinjam100.repository.BranchRepository;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
+import com.bagas.pinjam100.repository.installment.LoanInstallmentRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationApprovalRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationDisbursementRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -22,10 +24,15 @@ import com.bagas.pinjam100.repository.loanapplication.LoanApplicationReviewRepos
 import com.bagas.pinjam100.repository.userrolepermission.UserRepository;
 import com.bagas.pinjam100.service.auth.AuthService;
 import com.bagas.pinjam100.service.customer.CustomerService;
+import com.bagas.pinjam100.service.dashboard.DashboardService;
+import com.bagas.pinjam100.service.installment.LoanInstallmentService;
 import com.bagas.pinjam100.service.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,6 +49,7 @@ import java.util.UUID;
 @Transactional
 @AllArgsConstructor
 public class LoanApplicationService {
+
     private final LoanApplicationRepository loanApplicationRepository;
     private final CustomerRepository customerRepository;
     private final CustomerLimitRepository customerLimitRepository;
@@ -49,6 +57,7 @@ public class LoanApplicationService {
     private final LoanApplicationReviewRepository loanApplicationReviewRepository;
     private final LoanApplicationApprovalRepository loanApplicationApprovalRepository;
     private final LoanApplicationDisbursementRepository loanApplicationDisbursementRepository;
+    private final LoanInstallmentRepository loanInstallmentRepository;
     private final BranchRepository branchRepository;
     private final RekeningRepository rekeningRepository;
     private final AuthService authService;
@@ -56,6 +65,7 @@ public class LoanApplicationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'all'")
     public List<LoanApplicationResponse> findAllByDeletedDateIsNull() {
         return loanApplicationRepository.findAllByDeletedDateIsNull()
                 .stream()
@@ -68,6 +78,7 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN, key = "#id")
     public LoanApplicationResponse findByIdAndDeletedDateIsNull(UUID id) {
         LoanApplication response = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi pinjaman tidak ditemukan"));
@@ -82,6 +93,7 @@ public class LoanApplicationService {
         );
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'review_branch_' + @authService.getCurrentUser().getBranch().getId()")
     public List<LoanApplicationResponse> findAllForReview() {
         return loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.UNDER_REVIEW, authService.getCurrentUser().getBranch().getId())
                 .stream()
@@ -94,6 +106,7 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'approval_branch_' + @authService.getCurrentUser().getBranch().getId()")
     public List<LoanApplicationResponse> findAllForApproval() {
         return loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.PASS_REVIEW, authService.getCurrentUser().getBranch().getId())
                 .stream()
@@ -106,6 +119,7 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'disbursement'")
     public List<LoanApplicationResponse> findAllForDisbursement() {
         return loanApplicationRepository.findAllByStatusAndDeletedDateIsNull(LoanApplicationStatus.APPROVED)
                 .stream()
@@ -118,6 +132,7 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN, key = "'review_' + #id")
     public LoanApplicationReviewResponse findByIdForReview(UUID id) {
         LoanApplication response = loanApplicationRepository
                 .findByIdAndDeletedDateIsNull(id)
@@ -131,6 +146,7 @@ public class LoanApplicationService {
         return new LoanApplicationReviewResponse(response, customer);
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN, key = "'approval_' + #id")
     public LoanApplicationApprovalResponse findByIdForApproval(UUID id) {
         LoanApplication response = loanApplicationRepository
                 .findByIdAndDeletedDateIsNull(id)
@@ -141,9 +157,16 @@ public class LoanApplicationService {
         CustomerDetailResponse customer =
                 customerService.findDetailById(response.getCustomer().getId());
 
-        return new LoanApplicationApprovalResponse(response, customer);
+        LoanApplicationReview review = loanApplicationReviewRepository
+                .findByLoanApplication_Id(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Aplikasi belum dilakukan review oleh marketing")
+                );
+
+        return new LoanApplicationApprovalResponse(response, customer, new ReviewResponse(review));
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN, key = "'disbursement_' + #id")
     public LoanApplicationDisbursementResponse findByIdForDisbursement(UUID id) {
         LoanApplication response = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi pinjaman tidak ditemukan"));
@@ -163,6 +186,7 @@ public class LoanApplicationService {
         );
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'branch_' + #id")
     public List<LoanApplicationResponse> findByBranchAndDeletedDateIsNull(UUID id) {
         return loanApplicationRepository.findByBranch_IdAndDeletedDateIsNull(id)
                 .stream()
@@ -175,6 +199,7 @@ public class LoanApplicationService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = CacheNames.CACHE_LOAN_ALL, key = "'customer_' + #id")
     public List<LoanApplicationResponse> findByCustomerAndDeletedDateIsNull(UUID id) {
         return loanApplicationRepository.findByCustomer_IdAndDeletedDateIsNull(id)
                 .stream()
@@ -188,6 +213,12 @@ public class LoanApplicationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN_ALL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LIMIT, key = "'customer_' + #request.customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_CUSTOMER_DETAIL, key = "#request.customerId"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanApplicationResponse save(LoanApplicationRequest request) {
         if (request.getLoanAmount().compareTo(LoanConfig.MIN_LOAN_AMOUNT) < 0) {
             throw new IllegalArgumentException(
@@ -200,7 +231,6 @@ public class LoanApplicationService {
                     "Maksimum pinjaman adalah Rp35.000.000"
             );
         }
-
 
         Customer customer = customerRepository.findByIdAndDeletedDateIsNull(request.getCustomerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer tidak ditemukan"));
@@ -274,6 +304,14 @@ public class LoanApplicationService {
         );
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'review_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'approval_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'disbursement_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN_ALL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanApplicationResponse delete(UUID id) {
         LoanApplication loanApplication = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi Pinjaman tidak ditemukan"));
@@ -292,6 +330,12 @@ public class LoanApplicationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'review_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN_ALL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanApplicationResponse review(UUID id, ReviewRequest request) {
         LoanApplication loanApplication = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi Pinjaman tidak ditemukan"));
@@ -320,6 +364,12 @@ public class LoanApplicationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'approval_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN_ALL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanApplicationResponse approve(UUID id, ApprovalRequest request) {
         LoanApplication loanApplication = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi Pinjaman tidak ditemukan"));
@@ -348,6 +398,14 @@ public class LoanApplicationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN, key = "'disbursement_' + #id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_LOAN_ALL, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_INSTALLMENT_APPLICATION, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.CACHE_INSTALLMENT_CUSTOMER, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.CACHE_DASHBOARD, allEntries = true)
+    })
     public LoanApplicationResponse disburse(UUID id) {
         LoanApplication loanApplication = loanApplicationRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new EntityNotFoundException("Aplikasi Pinjaman ditemukan"));
@@ -381,7 +439,9 @@ public class LoanApplicationService {
             loanInstallment.setInstallmentSequence(i + 1);
             loanInstallment.setDueDate(disbursementDate.plusMonths(i + 1L));
             loanInstallment.setInstallmentAmount(loanApplication.getInstallmentAmount());
+            loanInstallment.setPaidAmount(BigDecimal.ZERO);
             loanInstallment.setStatus(InstallmentStatus.UNPAID);
+            loanInstallmentRepository.save(loanInstallment);
         }
 
         notificationService.sendToCustomer(

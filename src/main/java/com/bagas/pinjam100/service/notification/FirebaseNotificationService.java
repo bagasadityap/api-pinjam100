@@ -5,11 +5,13 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
 @Service
+@Profile("!test")
 public class FirebaseNotificationService {
 
     private final FirebaseMessaging firebaseMessaging;
