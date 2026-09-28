@@ -437,7 +437,7 @@ class LoanApplicationServiceTest {
         @DisplayName("should update status to REJECT_REVIEW and restore customer limit when failed by marketing")
         void shouldRejectReviewSuccessfullyAndRestoreLimit() {
             ReviewRequest request = new ReviewRequest();
-            request.setReviewResult(ReviewResult.FAILED);
+            request.setReviewResult(ReviewResult.REJECTED);
             request.setNotes("Dokumen tidak valid");
 
             User reviewer = new User();

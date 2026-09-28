@@ -342,7 +342,7 @@ public class LoanApplicationService {
 
         if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.APPROVED)) {
             loanApplication.setStatus(LoanApplicationStatus.PASS_REVIEW);
-        } else if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.FAILED)) {
+        } else if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.REJECTED)) {
             loanApplication.setStatus(LoanApplicationStatus.REJECT_REVIEW);
         }
 
