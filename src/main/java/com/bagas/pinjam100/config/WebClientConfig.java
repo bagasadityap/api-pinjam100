@@ -26,7 +26,7 @@ public class WebClientConfig {
     @Bean
     public WebClient kirimiWebClient() {
         return WebClient.builder()
-                .baseUrl("https://api.kirimi.id") // Pastikan pakai https://api... dan tanpa akhiran /v1
+                .baseUrl("https://api.kirimi.id")
                 .build();
     }
 }

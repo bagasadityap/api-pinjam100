@@ -1,6 +1,7 @@
 package com.bagas.pinjam100.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -10,7 +11,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class KirimiService {
 
     private final WebClient kirimiWebClient;
@@ -23,6 +23,10 @@ public class KirimiService {
 
     @Value("${kirimi.device-id}")
     private String deviceId;
+
+    public KirimiService(@Qualifier("kirimiWebClient") WebClient kirimiWebClient) {
+        this.kirimiWebClient = kirimiWebClient;
+    }
 
     public String sendOtpMessage(String phoneNumber, String otpCode) {
         String message = """

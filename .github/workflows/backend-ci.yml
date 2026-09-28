@@ -63,6 +63,9 @@ jobs:
       CRYPTO_KEY: ci-test-crypto-key-0123456789-abcdefghijklmnopqrstuvwxyz
       FLOWKIRIM_API_TOKEN: ci-test-token
       FLOWKIRIM_DEVICE_ID: ci-test-device
+      KIRIMI_USER_CODE: ci-test-user-code
+      KIRIMI_SECRET: ci-test-secret
+      KIRIMI_DEVICE_ID: ci-test-device-id
       MAIL_USERNAME: test@example.com
       MAIL_PASSWORD: ci-test-password
 
@@ -141,6 +144,9 @@ jobs:
           FLOWKIRIM_BASE_URL: ${{ secrets.FLOWKIRIM_BASE_URL }}
           FLOWKIRIM_API_TOKEN: ${{ secrets.FLOWKIRIM_API_TOKEN }}
           FLOWKIRIM_DEVICE_ID: ${{ secrets.FLOWKIRIM_DEVICE_ID }}
+          KIRIMI_USER_CODE: ${{ secrets.KIRIMI_USER_CODE }}
+          KIRIMI_SECRET: ${{ secrets.KIRIMI_SECRET }}
+          KIRIMI_DEVICE_ID: ${{ secrets.KIRIMI_DEVICE_ID }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
@@ -165,6 +171,9 @@ jobs:
             FLOWKIRIM_BASE_URL,
             FLOWKIRIM_API_TOKEN,
             FLOWKIRIM_DEVICE_ID,
+            KIRIMI_USER_CODE,
+            KIRIMI_SECRET,
+            KIRIMI_DEVICE_ID,
             MAIL_USERNAME,
             MAIL_PASSWORD,
             GOOGLE_APPLICATION_CREDENTIALS,
@@ -208,6 +217,9 @@ jobs:
             FLOWKIRIM_BASE_URL=$FLOWKIRIM_BASE_URL
             FLOWKIRIM_API_TOKEN=$FLOWKIRIM_API_TOKEN
             FLOWKIRIM_DEVICE_ID=$FLOWKIRIM_DEVICE_ID
+            KIRIMI_USER_CODE=$KIRIMI_USER_CODE
+            KIRIMI_SECRET=$KIRIMI_SECRET
+            KIRIMI_DEVICE_ID=$KIRIMI_DEVICE_ID
             MAIL_USERNAME=$MAIL_USERNAME
             MAIL_PASSWORD=$MAIL_PASSWORD
             REDIS_HOST=$REDIS_HOST

@@ -103,11 +103,13 @@ class KirimiServiceTest {
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody(errorResponseBody));
 
+        // Act & Assert
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> kirimiService.sendOtpMessage(phoneNumber, otpCode)
         );
 
+        // Verifikasi pesan error sesuai dengan yang dilempar oleh onStatus
         assertTrue(exception.getMessage().contains("Kirimi API error: 404 NOT_FOUND"));
         assertTrue(exception.getMessage().contains(errorResponseBody));
     }
