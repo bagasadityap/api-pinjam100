@@ -304,8 +304,9 @@ public class DashboardService {
     public DocumentCheckerDashboardResponse documentCheckerDashboard() {
         long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long pendingVerification = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                VerificationStatus.PENDING
+        long pendingVerification = customerRepository.countByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
+                VerificationStatus.PENDING,
+                false
         );
 
         long verifiedCustomers = customerRepository.countByVerificationStatusAndDeletedDateIsNull(

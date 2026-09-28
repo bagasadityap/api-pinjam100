@@ -338,7 +338,6 @@ class DashboardServiceTest {
                     .thenReturn(6L);
             when(loanApplicationSummaryRepository.sumLoanAmount())
                     .thenReturn(new BigDecimal("12000000"));
-            // Total current period = 6M, previous period = 3M -> growth rate = 100%
             when(loanApplicationSummaryRepository.sumLoanAmountBetween(any(), any()))
                     .thenReturn(new BigDecimal("6000000"));
             when(loanApplicationSummaryRepository.sumLoanAmountByStatus(LoanApplicationStatus.DISBURSED))
@@ -369,7 +368,6 @@ class DashboardServiceTest {
                     .thenReturn(0L);
             when(loanApplicationSummaryRepository.sumLoanAmount())
                     .thenReturn(BigDecimal.ZERO);
-            // Current period = 0, previous period = 5M -> growth rate should trigger negative / zero branches
             when(loanApplicationSummaryRepository.sumLoanAmountBetween(any(), any()))
                     .thenReturn(BigDecimal.ZERO);
             when(loanApplicationSummaryRepository.sumLoanAmountByStatus(any()))
@@ -393,7 +391,8 @@ class DashboardServiceTest {
         @DisplayName("should return document checker dashboard response")
         void shouldReturnDocumentCheckerDashboardResponse() {
             when(customerRepository.countByDeletedDateIsNull()).thenReturn(50L);
-            when(customerRepository.countByVerificationStatusAndDeletedDateIsNull(VerificationStatus.PENDING))
+            when(customerRepository.countByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
+                    VerificationStatus.PENDING, false))
                     .thenReturn(10L);
             when(customerRepository.countByVerificationStatusAndDeletedDateIsNull(VerificationStatus.VERIFIED))
                     .thenReturn(35L);
