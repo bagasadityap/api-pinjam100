@@ -123,10 +123,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should find all active loan applications")
         void shouldFindAll() {
-            when(loanApplicationRepository.findAllByDeletedDateIsNull())
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findAllByDeletedDateIsNull()).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findAllByDeletedDateIsNull();
             assertFalse(result.isEmpty());
@@ -138,10 +136,8 @@ class LoanApplicationServiceTest {
             User user = new User();
             user.setBranch(loanApplication.getBranch());
             when(authService.getCurrentUser()).thenReturn(user);
-            when(loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.UNDER_REVIEW, branchId))
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.UNDER_REVIEW, branchId)).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findAllForReview();
             assertFalse(result.isEmpty());
@@ -153,10 +149,8 @@ class LoanApplicationServiceTest {
             User user = new User();
             user.setBranch(loanApplication.getBranch());
             when(authService.getCurrentUser()).thenReturn(user);
-            when(loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.PASS_REVIEW, branchId))
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findAllByStatusAndBranch_IdAndDeletedDateIsNull(LoanApplicationStatus.PASS_REVIEW, branchId)).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findAllForApproval();
             assertFalse(result.isEmpty());
@@ -165,10 +159,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should find all for disbursement")
         void shouldFindAllForDisbursement() {
-            when(loanApplicationRepository.findAllByStatusAndDeletedDateIsNull(LoanApplicationStatus.APPROVED))
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findAllByStatusAndDeletedDateIsNull(LoanApplicationStatus.APPROVED)).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findAllForDisbursement();
             assertFalse(result.isEmpty());
@@ -177,10 +169,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should find by branch id")
         void shouldFindByBranch() {
-            when(loanApplicationRepository.findByBranch_IdAndDeletedDateIsNull(branchId))
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findByBranch_IdAndDeletedDateIsNull(branchId)).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findByBranchAndDeletedDateIsNull(branchId);
             assertFalse(result.isEmpty());
@@ -189,10 +179,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should find by customer id")
         void shouldFindByCustomer() {
-            when(loanApplicationRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(List.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(List.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             List<LoanApplicationResponse> result = loanApplicationService.findByCustomerAndDeletedDateIsNull(customerId);
             assertFalse(result.isEmpty());
@@ -201,10 +189,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should find by id for review")
         void shouldFindByIdForReview() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerService.findDetailById(customerId))
-                    .thenReturn(new CustomerDetailResponse());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerService.findDetailById(customerId)).thenReturn(new CustomerDetailResponse());
 
             LoanApplicationReviewResponse response = loanApplicationService.findByIdForReview(loanId);
             assertNotNull(response);
@@ -213,12 +199,9 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should throw exception when review not found for approval detail")
         void shouldThrowWhenReviewNotFound() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerService.findDetailById(customerId))
-                    .thenReturn(new CustomerDetailResponse());
-            when(loanApplicationReviewRepository.findByLoanApplication_Id(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerService.findDetailById(customerId)).thenReturn(new CustomerDetailResponse());
+            when(loanApplicationReviewRepository.findByLoanApplication_Id(loanId)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.findByIdForApproval(loanId));
         }
@@ -234,12 +217,9 @@ class LoanApplicationServiceTest {
             review.setLoanApplication(loanApplication);
             review.setReviewer(reviewer);
 
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerService.findDetailById(customerId))
-                    .thenReturn(new CustomerDetailResponse());
-            when(loanApplicationReviewRepository.findByLoanApplication_Id(loanId))
-                    .thenReturn(Optional.of(review));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerService.findDetailById(customerId)).thenReturn(new CustomerDetailResponse());
+            when(loanApplicationReviewRepository.findByLoanApplication_Id(loanId)).thenReturn(Optional.of(review));
 
             LoanApplicationApprovalResponse response = loanApplicationService.findByIdForApproval(loanId);
             assertNotNull(response);
@@ -249,12 +229,9 @@ class LoanApplicationServiceTest {
         @DisplayName("should find by id for disbursement successfully")
         void shouldFindByIdForDisbursement() {
             Rekening rekening = new Rekening();
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
-            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(rekening));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
+            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(rekening));
 
             LoanApplicationDisbursementResponse response = loanApplicationService.findByIdForDisbursement(loanId);
             assertNotNull(response);
@@ -263,12 +240,9 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should throw exception when rekening not found for disbursement detail")
         void shouldThrowWhenRekeningNotFoundForDisbursement() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
-            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
+            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.findByIdForDisbursement(loanId));
         }
@@ -281,10 +255,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should return loan application response when id exists")
         void shouldReturnLoanApplicationWhenFound() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.findByIdAndDeletedDateIsNull(loanId);
 
@@ -295,12 +267,9 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should throw EntityNotFoundException when id not found")
         void shouldThrowExceptionWhenNotFound() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class, () ->
-                    loanApplicationService.findByIdAndDeletedDateIsNull(loanId)
-            );
+            assertThrows(EntityNotFoundException.class, () -> loanApplicationService.findByIdAndDeletedDateIsNull(loanId));
         }
     }
 
@@ -317,12 +286,9 @@ class LoanApplicationServiceTest {
             request.setTenorMonths(6);
             request.setPurpose("Modal Usaha");
 
-            when(customerRepository.findByIdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customer));
-            when(branchRepository.findByCityAndDeletedDateIsNull(any()))
-                    .thenReturn(Optional.of(loanApplication.getBranch()));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerRepository.findByIdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customer));
+            when(branchRepository.findByCityAndDeletedDateIsNull(any())).thenReturn(Optional.of(loanApplication.getBranch()));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.save(request);
 
@@ -343,14 +309,10 @@ class LoanApplicationServiceTest {
             Branch fallbackBranch = new Branch();
             fallbackBranch.setCity("Kota Administrasi Jakarta Selatan");
 
-            when(customerRepository.findByIdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customer));
-            when(branchRepository.findByCityAndDeletedDateIsNull(customer.getDetail().getCity()))
-                    .thenReturn(Optional.empty());
-            when(branchRepository.findByCityAndDeletedDateIsNull("Kota Administrasi Jakarta Selatan"))
-                    .thenReturn(Optional.of(fallbackBranch));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerRepository.findByIdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customer));
+            when(branchRepository.findByCityAndDeletedDateIsNull(customer.getDetail().getCity())).thenReturn(Optional.empty());
+            when(branchRepository.findByCityAndDeletedDateIsNull("Kota Administrasi Jakarta Selatan")).thenReturn(Optional.of(fallbackBranch));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.save(request);
             assertNotNull(response);
@@ -364,10 +326,8 @@ class LoanApplicationServiceTest {
             request.setLoanAmount(BigDecimal.valueOf(5000000));
             request.setTenorMonths(6);
 
-            when(customerRepository.findByIdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customer));
-            when(branchRepository.findByCityAndDeletedDateIsNull(any()))
-                    .thenReturn(Optional.empty());
+            when(customerRepository.findByIdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customer));
+            when(branchRepository.findByCityAndDeletedDateIsNull(any())).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.save(request));
         }
@@ -380,12 +340,9 @@ class LoanApplicationServiceTest {
             request.setLoanAmount(BigDecimal.valueOf(5000000));
             request.setTenorMonths(6);
 
-            when(customerRepository.findByIdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customer));
-            when(branchRepository.findByCityAndDeletedDateIsNull(any()))
-                    .thenReturn(Optional.of(loanApplication.getBranch()));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.empty());
+            when(customerRepository.findByIdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customer));
+            when(branchRepository.findByCityAndDeletedDateIsNull(any())).thenReturn(Optional.of(loanApplication.getBranch()));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.empty());
 
             assertThrows(IllegalStateException.class, () -> loanApplicationService.save(request));
         }
@@ -395,17 +352,14 @@ class LoanApplicationServiceTest {
         void shouldThrowWhenExceedsLimit() {
             LoanApplicationRequest request = new LoanApplicationRequest();
             request.setCustomerId(customerId);
-            request.setLoanAmount(BigDecimal.valueOf(15000000)); // Melebihi limit 10 juta
+            request.setLoanAmount(BigDecimal.valueOf(15000000));
             request.setTenorMonths(6);
 
             customerLimit.setAvailableLimit(BigDecimal.valueOf(5000000));
 
-            when(customerRepository.findByIdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customer));
-            when(branchRepository.findByCityAndDeletedDateIsNull(any()))
-                    .thenReturn(Optional.of(loanApplication.getBranch()));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerRepository.findByIdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customer));
+            when(branchRepository.findByCityAndDeletedDateIsNull(any())).thenReturn(Optional.of(loanApplication.getBranch()));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             assertThrows(IllegalArgumentException.class, () -> loanApplicationService.save(request));
         }
@@ -416,10 +370,7 @@ class LoanApplicationServiceTest {
             LoanApplicationRequest request = new LoanApplicationRequest();
             request.setLoanAmount(BigDecimal.valueOf(100000));
 
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> loanApplicationService.save(request)
-            );
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> loanApplicationService.save(request));
             assertTrue(exception.getMessage().contains("Minimum pinjaman"));
         }
 
@@ -429,10 +380,7 @@ class LoanApplicationServiceTest {
             LoanApplicationRequest request = new LoanApplicationRequest();
             request.setLoanAmount(BigDecimal.valueOf(40000000));
 
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> loanApplicationService.save(request)
-            );
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> loanApplicationService.save(request));
             assertTrue(exception.getMessage().contains("Maksimum pinjaman"));
         }
     }
@@ -444,10 +392,8 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should delete loan application successfully")
         void shouldDeleteSuccessfully() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.delete(loanId);
             assertNotNull(response);
@@ -457,8 +403,7 @@ class LoanApplicationServiceTest {
         @Test
         @DisplayName("should throw exception when deleting non-existent application")
         void shouldThrowWhenDeletingNotFound() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.delete(loanId));
         }
@@ -476,45 +421,47 @@ class LoanApplicationServiceTest {
             request.setNotes("Dokumen lengkap");
 
             User reviewer = new User();
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
             when(authService.getCurrentUser()).thenReturn(reviewer);
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.review(loanId, request);
 
             assertNotNull(response);
             assertEquals(LoanApplicationStatus.PASS_REVIEW, loanApplication.getStatus());
             verify(loanApplicationReviewRepository).save(any(LoanApplicationReview.class));
+            verify(customerLimitRepository).save(customerLimit);
         }
 
         @Test
-        @DisplayName("should update status to REJECT_REVIEW when failed by marketing")
-        void shouldRejectReviewSuccessfully() {
+        @DisplayName("should update status to REJECT_REVIEW and restore customer limit when failed by marketing")
+        void shouldRejectReviewSuccessfullyAndRestoreLimit() {
             ReviewRequest request = new ReviewRequest();
             request.setReviewResult(ReviewResult.FAILED);
             request.setNotes("Dokumen tidak valid");
 
             User reviewer = new User();
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
             when(authService.getCurrentUser()).thenReturn(reviewer);
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
+
+            BigDecimal initialLimit = customerLimit.getAvailableLimit();
+            BigDecimal expectedLimit = initialLimit.add(loanApplication.getLoanAmount());
 
             LoanApplicationResponse response = loanApplicationService.review(loanId, request);
 
             assertNotNull(response);
             assertEquals(LoanApplicationStatus.REJECT_REVIEW, loanApplication.getStatus());
+            assertEquals(expectedLimit, customerLimit.getAvailableLimit());
+            verify(loanApplicationReviewRepository).save(any(LoanApplicationReview.class));
+            verify(customerLimitRepository).save(customerLimit);
         }
 
         @Test
         @DisplayName("should throw exception when reviewing non-existent application")
         void shouldThrowWhenReviewNotFound() {
             ReviewRequest request = new ReviewRequest();
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.review(loanId, request));
         }
@@ -534,17 +481,16 @@ class LoanApplicationServiceTest {
             User approver = new User();
             loanApplication.setStatus(LoanApplicationStatus.PASS_REVIEW);
 
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
             when(authService.getCurrentUser()).thenReturn(approver);
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.approve(loanId, request);
 
             assertNotNull(response);
             assertEquals(LoanApplicationStatus.APPROVED, loanApplication.getStatus());
             verify(loanApplicationApprovalRepository).save(any(LoanApplicationApproval.class));
+            verify(customerLimitRepository).save(customerLimit);
         }
 
         @Test
@@ -557,24 +503,23 @@ class LoanApplicationServiceTest {
             User approver = new User();
             loanApplication.setStatus(LoanApplicationStatus.PASS_REVIEW);
 
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
             when(authService.getCurrentUser()).thenReturn(approver);
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
             LoanApplicationResponse response = loanApplicationService.approve(loanId, request);
 
             assertNotNull(response);
             assertEquals(LoanApplicationStatus.REJECTED, loanApplication.getStatus());
+            verify(loanApplicationApprovalRepository).save(any(LoanApplicationApproval.class));
+            verify(customerLimitRepository).save(customerLimit);
         }
 
         @Test
         @DisplayName("should throw exception when approving non-existent application")
         void shouldThrowWhenApproveNotFound() {
             ApprovalRequest request = new ApprovalRequest();
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class, () -> loanApplicationService.approve(loanId, request));
         }
@@ -594,62 +539,30 @@ class LoanApplicationServiceTest {
             loanApplication.setTenorMonths(12);
             loanApplication.setInstallmentAmount(BigDecimal.valueOf(900000));
 
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.of(loanApplication));
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.of(loanApplication));
+            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(rekening));
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId)).thenReturn(Optional.of(customerLimit));
 
-            when(rekeningRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(rekening));
-
-            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(customerId))
-                    .thenReturn(Optional.of(customerLimit));
-
-            LoanApplicationResponse response =
-                    loanApplicationService.disburse(loanId);
+            LoanApplicationResponse response = loanApplicationService.disburse(loanId);
 
             assertNotNull(response);
-            assertEquals(
-                    LoanApplicationStatus.DISBURSED,
-                    loanApplication.getStatus()
-            );
-
-            verify(loanApplicationDisbursementRepository)
-                    .save(any(LoanDisbursement.class));
-
-            verify(loanInstallmentRepository, times(12))
-                    .save(any(LoanInstallment.class));
-
-            verify(notificationService)
-                    .sendToCustomer(
-                            any(),
-                            any(),
-                            any(),
-                            any(),
-                            any()
-                    );
-
-            verify(customerLimitRepository)
-                    .findByCustomer_IdAndDeletedDateIsNull(customerId);
+            assertEquals(LoanApplicationStatus.DISBURSED, loanApplication.getStatus());
+            verify(loanApplicationDisbursementRepository).save(any(LoanDisbursement.class));
+            verify(loanInstallmentRepository, times(12)).save(any(LoanInstallment.class));
+            verify(notificationService).sendToCustomer(any(), any(), any(), any(), any());
+            verify(customerLimitRepository).findByCustomer_IdAndDeletedDateIsNull(customerId);
         }
 
         @Test
         @DisplayName("should throw exception when disburse application not found")
         void shouldThrowWhenDisburseNotFound() {
-            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId))
-                    .thenReturn(Optional.empty());
+            when(loanApplicationRepository.findByIdAndDeletedDateIsNull(loanId)).thenReturn(Optional.empty());
 
-            assertThrows(
-                    EntityNotFoundException.class,
-                    () -> loanApplicationService.disburse(loanId)
-            );
+            assertThrows(EntityNotFoundException.class, () -> loanApplicationService.disburse(loanId));
 
-            verify(loanApplicationDisbursementRepository, never())
-                    .save(any(LoanDisbursement.class));
-
-            verify(loanInstallmentRepository, never())
-                    .save(any(LoanInstallment.class));
-
-            verify(notificationService, never())
-                    .sendToCustomer(any(), any(), any(), any(), any());
+            verify(loanApplicationDisbursementRepository, never()).save(any(LoanDisbursement.class));
+            verify(loanInstallmentRepository, never()).save(any(LoanInstallment.class));
+            verify(notificationService, never()).sendToCustomer(any(), any(), any(), any(), any());
         }
     }
 }

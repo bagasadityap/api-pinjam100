@@ -355,7 +355,23 @@ public class LoanApplicationService {
 
         CustomerLimit customerLimit = customerLimitRepository
                 .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Data limit tidak ditemukan"));
+
+        if (LoanApplicationStatus.REJECT_REVIEW.equals(loanApplication.getStatus())) {
+            BigDecimal availableLimit = customerLimit.getAvailableLimit() != null
+                    ? customerLimit.getAvailableLimit()
+                    : BigDecimal.ZERO;
+
+            BigDecimal loanAmount = loanApplication.getLoanAmount() != null
+                    ? loanApplication.getLoanAmount()
+                    : BigDecimal.ZERO;
+
+            customerLimit.setAvailableLimit(
+                    availableLimit.add(loanAmount)
+            );
+        }
+
+        customerLimitRepository.save(customerLimit);
 
         return new LoanApplicationResponse(
                 loanApplication,
@@ -389,7 +405,23 @@ public class LoanApplicationService {
 
         CustomerLimit customerLimit = customerLimitRepository
                 .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Data limit tidak ditemukan"));
+
+        if (LoanApplicationStatus.REJECT_REVIEW.equals(loanApplication.getStatus())) {
+            BigDecimal availableLimit = customerLimit.getAvailableLimit() != null
+                    ? customerLimit.getAvailableLimit()
+                    : BigDecimal.ZERO;
+
+            BigDecimal loanAmount = loanApplication.getLoanAmount() != null
+                    ? loanApplication.getLoanAmount()
+                    : BigDecimal.ZERO;
+
+            customerLimit.setAvailableLimit(
+                    availableLimit.add(loanAmount)
+            );
+        }
+
+        customerLimitRepository.save(customerLimit);
 
         return new LoanApplicationResponse(
                 loanApplication,
