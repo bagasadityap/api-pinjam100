@@ -342,7 +342,7 @@ public class LoanApplicationService {
 
         if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.APPROVED)) {
             loanApplication.setStatus(LoanApplicationStatus.PASS_REVIEW);
-        } else if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.FAILED)) {
+        } else if (ReviewResult.valueOf(request.getReviewResult().name()).equals(ReviewResult.REJECTED)) {
             loanApplication.setStatus(LoanApplicationStatus.REJECT_REVIEW);
         }
 
@@ -355,7 +355,33 @@ public class LoanApplicationService {
 
         CustomerLimit customerLimit = customerLimitRepository
                 .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Data limit tidak ditemukan"));
+
+        if (LoanApplicationStatus.REJECT_REVIEW.equals(loanApplication.getStatus())) {
+            BigDecimal availableLimit = customerLimit.getAvailableLimit() != null
+                    ? customerLimit.getAvailableLimit()
+                    : BigDecimal.ZERO;
+
+            BigDecimal loanAmount = loanApplication.getLoanAmount() != null
+                    ? loanApplication.getLoanAmount()
+                    : BigDecimal.ZERO;
+
+            customerLimit.setAvailableLimit(
+                    availableLimit.add(loanAmount)
+            );
+        }
+
+        customerLimitRepository.save(customerLimit);
+
+        if (review.getResult().equals(ReviewResult.REJECTED)) {
+            notificationService.sendToCustomer(
+                    loanApplication.getCustomer(),
+                    "Pengajuan Pinjaman Ditolak",
+                    "Mohon maaf pengajuan pinjaman Anda ditolak.",
+                    "verification",
+                    null
+            );
+        }
 
         return new LoanApplicationResponse(
                 loanApplication,
@@ -389,7 +415,33 @@ public class LoanApplicationService {
 
         CustomerLimit customerLimit = customerLimitRepository
                 .findByCustomer_IdAndDeletedDateIsNull(loanApplication.getCustomer().getId())
-                .orElse(null);
+                .orElseThrow(() -> new EntityNotFoundException("Data limit tidak ditemukan"));
+
+        if (LoanApplicationStatus.REJECT_REVIEW.equals(loanApplication.getStatus())) {
+            BigDecimal availableLimit = customerLimit.getAvailableLimit() != null
+                    ? customerLimit.getAvailableLimit()
+                    : BigDecimal.ZERO;
+
+            BigDecimal loanAmount = loanApplication.getLoanAmount() != null
+                    ? loanApplication.getLoanAmount()
+                    : BigDecimal.ZERO;
+
+            customerLimit.setAvailableLimit(
+                    availableLimit.add(loanAmount)
+            );
+        }
+
+        customerLimitRepository.save(customerLimit);
+
+        if (approval.getStatus().equals(ApprovalStatus.REJECTED)) {
+            notificationService.sendToCustomer(
+                    loanApplication.getCustomer(),
+                    "Pengajuan Pinjaman Ditolak",
+                    "Mohon maaf pengajuan pinjaman Anda ditolak.",
+                    "verification",
+                    null
+            );
+        }
 
         return new LoanApplicationResponse(
                 loanApplication,

@@ -9,12 +9,12 @@ import com.bagas.pinjam100.dto.dashboard.PaymentDashboardResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.LoanApplicationResponse;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationBranchSummaryRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationSummaryRepository;
+import com.bagas.pinjam100.security.AppUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -49,7 +49,7 @@ public class DashboardService {
         return switch (role) {
             case "SUPER_ADMIN" -> superAdminDashboard();
             case "MARKETING" -> marketingDashboard();
-            case "BRANCH_MARKETING" -> branchMarketingDashboard();
+            case "BRANCH_MANAGER" -> branchManagerDashboard();
             case "PAYMENT" -> paymentDashboard();
             case "DOCUMENT_CHECKER" -> documentCheckerDashboard();
             case "CREDIT_ANALYST" -> creditAnalystDashboard();
@@ -144,9 +144,9 @@ public class DashboardService {
 
     @Cacheable(
             cacheNames = CacheNames.CACHE_DASHBOARD,
-            key = "'branch_marketing_' + @dashboardService.getAuthUser().getBranch().getId()"
+            key = "'branch_manager_' + @dashboardService.getAuthUser().getBranch().getId()"
     )
-    public MarketingDashboardResponse branchMarketingDashboard() {
+    public MarketingDashboardResponse branchManagerDashboard() {
         return branchDashboard(LoanApplicationStatus.PASS_REVIEW);
     }
 
@@ -304,8 +304,9 @@ public class DashboardService {
     public DocumentCheckerDashboardResponse documentCheckerDashboard() {
         long totalCustomers = customerRepository.countByDeletedDateIsNull();
 
-        long pendingVerification = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
-                VerificationStatus.PENDING
+        long pendingVerification = customerRepository.countByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
+                VerificationStatus.PENDING,
+                false
         );
 
         long verifiedCustomers = customerRepository.countByVerificationStatusAndDeletedDateIsNull(
@@ -399,17 +400,19 @@ public class DashboardService {
                 .orElseThrow(() -> new IllegalArgumentException("Role tidak ditemukan"));
     }
 
-    public User getAuthUser() {
+    public AppUser getAuthUser() {
         Authentication authentication = SecurityContextHolder
                 .getContext()
                 .getAuthentication();
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof User user)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AppUser appUser)) {
             throw new IllegalArgumentException("User tidak ditemukan");
         }
 
-        return user;
+        if (appUser.getBranch() == null) {
+            throw new IllegalArgumentException("Cabang user tidak ditemukan");
+        }
+
+        return appUser;
     }
 }

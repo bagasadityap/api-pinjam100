@@ -3,6 +3,7 @@ package com.bagas.pinjam100.service.otp;
 import com.bagas.pinjam100.entity.otp.OtpVerification;
 import com.bagas.pinjam100.repository.otp.OtpVerificationRepository;
 import com.bagas.pinjam100.service.FlowKirimService;
+import com.bagas.pinjam100.service.KirimiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class OtpVerificationService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final OtpVerificationRepository otpVerificationRepository;
+    private final KirimiService kirimiService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -38,6 +40,11 @@ public class OtpVerificationService {
                 .build();
 
         otpVerificationRepository.save(otpVerification);
+
+        kirimiService.sendOtpMessage(
+                phoneNumber,
+                otpCode
+        );
 
         return otpCode;
     }

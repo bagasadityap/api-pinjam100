@@ -107,7 +107,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/scalar/**",
                                 "/auth/**",
-                                "/uploads/files/**"
+                                "/uploads/files/**",
+                                "/test/**"
                         )
                         .permitAll()
                         .anyRequest()

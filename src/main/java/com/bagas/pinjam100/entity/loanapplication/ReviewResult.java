@@ -2,6 +2,6 @@ package com.bagas.pinjam100.entity.loanapplication;
 
 public enum ReviewResult {
     APPROVED,
-    FAILED,
+    REJECTED,
     NEED_REVISION
 }

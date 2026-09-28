@@ -68,6 +68,8 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
             VerificationStatus verificationStatus
     );
 
+    long countByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(VerificationStatus verificationStatus, boolean profileCompleted);
+
     @Query("""
         SELECT COUNT(c)
         FROM Customer c

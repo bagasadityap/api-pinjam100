@@ -11,12 +11,12 @@ import com.bagas.pinjam100.entity.customer.CustomerLimit;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplication;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationBranchSummaryRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationSummaryRepository;
+import com.bagas.pinjam100.security.AppUser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -107,9 +107,9 @@ class DashboardServiceTest {
         }
 
         @Test
-        @DisplayName("should route to branchMarketingDashboard when role is BRANCH_MARKETING")
+        @DisplayName("should route to branchManagerDashboard when role is BRANCH_MARKETING")
         void shouldRouteToBranchMarketingDashboard() {
-            setupSecurityContext("ROLE_BRANCH_MARKETING", createUser());
+            setupSecurityContext("ROLE_BRANCH_MANAGER", createUser());
 
             when(loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(BRANCH_ID)).thenReturn(BigDecimal.ZERO);
             when(loanApplicationBranchSummaryRepository.sumLoanAmountCreatedBetweenByBranch(eq(BRANCH_ID), any(), any())).thenReturn(BigDecimal.ZERO);
@@ -189,6 +189,21 @@ class DashboardServiceTest {
             );
 
             assertEquals("Role tidak ditemukan", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when MARKETING user has no branch")
+        void shouldThrowExceptionWhenMarketingUserHasNoBranch() {
+            AppUser user = createUser();
+            user.setBranch(null);
+            setupSecurityContext("ROLE_MARKETING", user);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.dashboard()
+            );
+
+            assertEquals("Cabang user tidak ditemukan", exception.getMessage());
         }
     }
 
@@ -312,7 +327,7 @@ class DashboardServiceTest {
             when(loanApplicationRepository.findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(BRANCH_ID))
                     .thenReturn(List.of());
 
-            MarketingDashboardResponse response = dashboardService.branchMarketingDashboard();
+            MarketingDashboardResponse response = dashboardService.branchManagerDashboard();
 
             assertNotNull(response);
             verify(loanApplicationBranchSummaryRepository).countByStatusAndBranch(BRANCH_ID, LoanApplicationStatus.PASS_REVIEW);
@@ -338,7 +353,6 @@ class DashboardServiceTest {
                     .thenReturn(6L);
             when(loanApplicationSummaryRepository.sumLoanAmount())
                     .thenReturn(new BigDecimal("12000000"));
-            // Total current period = 6M, previous period = 3M -> growth rate = 100%
             when(loanApplicationSummaryRepository.sumLoanAmountBetween(any(), any()))
                     .thenReturn(new BigDecimal("6000000"));
             when(loanApplicationSummaryRepository.sumLoanAmountByStatus(LoanApplicationStatus.DISBURSED))
@@ -369,7 +383,6 @@ class DashboardServiceTest {
                     .thenReturn(0L);
             when(loanApplicationSummaryRepository.sumLoanAmount())
                     .thenReturn(BigDecimal.ZERO);
-            // Current period = 0, previous period = 5M -> growth rate should trigger negative / zero branches
             when(loanApplicationSummaryRepository.sumLoanAmountBetween(any(), any()))
                     .thenReturn(BigDecimal.ZERO);
             when(loanApplicationSummaryRepository.sumLoanAmountByStatus(any()))
@@ -393,7 +406,8 @@ class DashboardServiceTest {
         @DisplayName("should return document checker dashboard response")
         void shouldReturnDocumentCheckerDashboardResponse() {
             when(customerRepository.countByDeletedDateIsNull()).thenReturn(50L);
-            when(customerRepository.countByVerificationStatusAndDeletedDateIsNull(VerificationStatus.PENDING))
+            when(customerRepository.countByVerificationStatusAndProfileCompletedAndDeletedDateIsNull(
+                    VerificationStatus.PENDING, false))
                     .thenReturn(10L);
             when(customerRepository.countByVerificationStatusAndDeletedDateIsNull(VerificationStatus.VERIFIED))
                     .thenReturn(35L);
@@ -449,19 +463,19 @@ class DashboardServiceTest {
     class GetAuthUserTest {
 
         @Test
-        @DisplayName("should return authenticated user when principal is User instance")
+        @DisplayName("should return authenticated user when principal is AppUser instance")
         void shouldReturnAuthenticatedUser() {
-            User user = createUser();
+            AppUser user = createUser();
             setupSecurityContext("ROLE_SUPER_ADMIN", user);
 
-            User result = dashboardService.getAuthUser();
+            AppUser result = dashboardService.getAuthUser();
 
             assertNotNull(result);
             assertEquals(user, result);
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException when principal is not User instance")
+        @DisplayName("should throw IllegalArgumentException when principal is not AppUser instance")
         void shouldThrowExceptionWhenPrincipalIsNotUser() {
             Authentication authentication = mock(Authentication.class);
             SecurityContext securityContext = mock(SecurityContext.class);
@@ -477,9 +491,40 @@ class DashboardServiceTest {
 
             assertEquals("User tidak ditemukan", exception.getMessage());
         }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when authentication is null")
+        void shouldThrowExceptionWhenAuthenticationIsNull() {
+            SecurityContext securityContext = mock(SecurityContext.class);
+
+            when(securityContext.getAuthentication()).thenReturn(null);
+            SecurityContextHolder.setContext(securityContext);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.getAuthUser()
+            );
+
+            assertEquals("User tidak ditemukan", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when user has no branch")
+        void shouldThrowExceptionWhenBranchIsNull() {
+            AppUser user = createUser();
+            user.setBranch(null);
+            setupSecurityContext("ROLE_MARKETING", user);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.getAuthUser()
+            );
+
+            assertEquals("Cabang user tidak ditemukan", exception.getMessage());
+        }
     }
 
-    private void setupSecurityContext(String role, User user) {
+    private void setupSecurityContext(String role, AppUser user) {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         lenient().doReturn(List.of(new SimpleGrantedAuthority(role))).when(authentication).getAuthorities();
@@ -489,14 +534,19 @@ class DashboardServiceTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
-    private User createUser() {
+    private AppUser createUser() {
         Branch branch = new Branch();
         branch.setId(BRANCH_ID);
 
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setName("Bagas Aditya");
+        AppUser user = new AppUser();
+        user.setIdUser(UUID.randomUUID());
+        user.setIdentityNumber("bagas");
+        user.setPassword("password");
         user.setBranch(branch);
+        user.setAuthorities(
+                List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+        );
+
         return user;
     }
 
