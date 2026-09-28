@@ -9,6 +9,7 @@ import com.bagas.pinjam100.dto.dashboard.PaymentDashboardResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.LoanApplicationResponse;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
+import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -405,12 +406,14 @@ public class DashboardService {
                 .getContext()
                 .getAuthentication();
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof AppUser user)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AppUser appUser)) {
             throw new IllegalArgumentException("User tidak ditemukan");
         }
 
-        return user;
+        if (appUser.getBranch() == null) {
+            throw new IllegalArgumentException("Cabang user tidak ditemukan");
+        }
+
+        return appUser;
     }
 }

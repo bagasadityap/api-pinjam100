@@ -11,12 +11,12 @@ import com.bagas.pinjam100.entity.customer.CustomerLimit;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplication;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.security.AppUser;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationBranchSummaryRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationSummaryRepository;
+import com.bagas.pinjam100.security.AppUser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -189,6 +189,21 @@ class DashboardServiceTest {
             );
 
             assertEquals("Role tidak ditemukan", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when MARKETING user has no branch")
+        void shouldThrowExceptionWhenMarketingUserHasNoBranch() {
+            AppUser user = createUser();
+            user.setBranch(null);
+            setupSecurityContext("ROLE_MARKETING", user);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.dashboard()
+            );
+
+            assertEquals("Cabang user tidak ditemukan", exception.getMessage());
         }
     }
 
@@ -475,6 +490,37 @@ class DashboardServiceTest {
             );
 
             assertEquals("User tidak ditemukan", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when authentication is null")
+        void shouldThrowExceptionWhenAuthenticationIsNull() {
+            SecurityContext securityContext = mock(SecurityContext.class);
+
+            when(securityContext.getAuthentication()).thenReturn(null);
+            SecurityContextHolder.setContext(securityContext);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.getAuthUser()
+            );
+
+            assertEquals("User tidak ditemukan", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException when user has no branch")
+        void shouldThrowExceptionWhenBranchIsNull() {
+            AppUser user = createUser();
+            user.setBranch(null);
+            setupSecurityContext("ROLE_MARKETING", user);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> dashboardService.getAuthUser()
+            );
+
+            assertEquals("Cabang user tidak ditemukan", exception.getMessage());
         }
     }
 
