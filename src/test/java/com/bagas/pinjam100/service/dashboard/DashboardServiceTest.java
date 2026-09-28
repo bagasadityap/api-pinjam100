@@ -107,9 +107,9 @@ class DashboardServiceTest {
         }
 
         @Test
-        @DisplayName("should route to branchMarketingDashboard when role is BRANCH_MARKETING")
+        @DisplayName("should route to branchManagerDashboard when role is BRANCH_MARKETING")
         void shouldRouteToBranchMarketingDashboard() {
-            setupSecurityContext("ROLE_BRANCH_MARKETING", createUser());
+            setupSecurityContext("ROLE_BRANCH_MANAGER", createUser());
 
             when(loanApplicationBranchSummaryRepository.sumLoanAmountByBranch(BRANCH_ID)).thenReturn(BigDecimal.ZERO);
             when(loanApplicationBranchSummaryRepository.sumLoanAmountCreatedBetweenByBranch(eq(BRANCH_ID), any(), any())).thenReturn(BigDecimal.ZERO);
@@ -327,7 +327,7 @@ class DashboardServiceTest {
             when(loanApplicationRepository.findTop5ByBranch_IdAndDeletedDateIsNullOrderByCreatedDateDesc(BRANCH_ID))
                     .thenReturn(List.of());
 
-            MarketingDashboardResponse response = dashboardService.branchMarketingDashboard();
+            MarketingDashboardResponse response = dashboardService.branchManagerDashboard();
 
             assertNotNull(response);
             verify(loanApplicationBranchSummaryRepository).countByStatusAndBranch(BRANCH_ID, LoanApplicationStatus.PASS_REVIEW);

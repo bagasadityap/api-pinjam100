@@ -9,7 +9,6 @@ import com.bagas.pinjam100.dto.dashboard.PaymentDashboardResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.LoanApplicationResponse;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -50,7 +49,7 @@ public class DashboardService {
         return switch (role) {
             case "SUPER_ADMIN" -> superAdminDashboard();
             case "MARKETING" -> marketingDashboard();
-            case "BRANCH_MARKETING" -> branchMarketingDashboard();
+            case "BRANCH_MANAGER" -> branchManagerDashboard();
             case "PAYMENT" -> paymentDashboard();
             case "DOCUMENT_CHECKER" -> documentCheckerDashboard();
             case "CREDIT_ANALYST" -> creditAnalystDashboard();
@@ -145,9 +144,9 @@ public class DashboardService {
 
     @Cacheable(
             cacheNames = CacheNames.CACHE_DASHBOARD,
-            key = "'branch_marketing_' + @dashboardService.getAuthUser().getBranch().getId()"
+            key = "'branch_manager_' + @dashboardService.getAuthUser().getBranch().getId()"
     )
-    public MarketingDashboardResponse branchMarketingDashboard() {
+    public MarketingDashboardResponse branchManagerDashboard() {
         return branchDashboard(LoanApplicationStatus.PASS_REVIEW);
     }
 
