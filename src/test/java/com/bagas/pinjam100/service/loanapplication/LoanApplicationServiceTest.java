@@ -877,7 +877,7 @@ class LoanApplicationServiceTest {
                             eq("Pengajuan Pinjaman Ditolak"),
                             eq("Mohon maaf pengajuan pinjaman Anda ditolak."),
                             eq("verification"),
-                            eq("pinjam100://")
+                            isNull()
                     );
         }
 
@@ -1061,7 +1061,7 @@ class LoanApplicationServiceTest {
                             eq("Pengajuan Pinjaman Ditolak"),
                             eq("Mohon maaf pengajuan pinjaman Anda ditolak."),
                             eq("verification"),
-                            eq("pinjam100://")
+                            isNull()
                     );
         }
 

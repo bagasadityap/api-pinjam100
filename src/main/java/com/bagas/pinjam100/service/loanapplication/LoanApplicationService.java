@@ -379,7 +379,7 @@ public class LoanApplicationService {
                     "Pengajuan Pinjaman Ditolak",
                     "Mohon maaf pengajuan pinjaman Anda ditolak.",
                     "verification",
-                    "pinjam100://"
+                    null
             );
         }
 
@@ -439,7 +439,7 @@ public class LoanApplicationService {
                     "Pengajuan Pinjaman Ditolak",
                     "Mohon maaf pengajuan pinjaman Anda ditolak.",
                     "verification",
-                    "pinjam100://"
+                    null
             );
         }
 

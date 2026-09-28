@@ -227,10 +227,10 @@ public class CustomerService {
         if (verificationStatus == VerificationStatus.REJECTED) {
             notificationService.sendToCustomer(
                     customer,
-                    "Akun Anda Berhasil Diverifikasi",
-                    "Akun Anda telah berhasil diverifikasi. Anda kini dapat mulai mengajukan pinjaman.",
+                    "Akun Anda Ditolak",
+                    "Mohon maaf, pengajuan verifikasi akun Anda ditolak.",
                     "verification",
-                    "pinjam100://"
+                    null
             );
         }
 
