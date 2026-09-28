@@ -9,12 +9,12 @@ import com.bagas.pinjam100.dto.dashboard.PaymentDashboardResponse;
 import com.bagas.pinjam100.dto.response.loanapplication.LoanApplicationResponse;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.entity.userrolepermission.User;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationBranchSummaryRepository;
 import com.bagas.pinjam100.repository.loanapplication.summary.LoanApplicationSummaryRepository;
+import com.bagas.pinjam100.security.AppUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -400,14 +400,14 @@ public class DashboardService {
                 .orElseThrow(() -> new IllegalArgumentException("Role tidak ditemukan"));
     }
 
-    public User getAuthUser() {
+    public AppUser getAuthUser() {
         Authentication authentication = SecurityContextHolder
                 .getContext()
                 .getAuthentication();
 
         Object principal = authentication.getPrincipal();
 
-        if (!(principal instanceof User user)) {
+        if (!(principal instanceof AppUser user)) {
             throw new IllegalArgumentException("User tidak ditemukan");
         }
 

@@ -11,7 +11,7 @@ import com.bagas.pinjam100.entity.customer.CustomerLimit;
 import com.bagas.pinjam100.entity.customer.VerificationStatus;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplication;
 import com.bagas.pinjam100.entity.loanapplication.LoanApplicationStatus;
-import com.bagas.pinjam100.entity.userrolepermission.User;
+import com.bagas.pinjam100.security.AppUser;
 import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.loanapplication.LoanApplicationRepository;
@@ -448,19 +448,19 @@ class DashboardServiceTest {
     class GetAuthUserTest {
 
         @Test
-        @DisplayName("should return authenticated user when principal is User instance")
+        @DisplayName("should return authenticated user when principal is AppUser instance")
         void shouldReturnAuthenticatedUser() {
-            User user = createUser();
+            AppUser user = createUser();
             setupSecurityContext("ROLE_SUPER_ADMIN", user);
 
-            User result = dashboardService.getAuthUser();
+            AppUser result = dashboardService.getAuthUser();
 
             assertNotNull(result);
             assertEquals(user, result);
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException when principal is not User instance")
+        @DisplayName("should throw IllegalArgumentException when principal is not AppUser instance")
         void shouldThrowExceptionWhenPrincipalIsNotUser() {
             Authentication authentication = mock(Authentication.class);
             SecurityContext securityContext = mock(SecurityContext.class);
@@ -478,7 +478,7 @@ class DashboardServiceTest {
         }
     }
 
-    private void setupSecurityContext(String role, User user) {
+    private void setupSecurityContext(String role, AppUser user) {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         lenient().doReturn(List.of(new SimpleGrantedAuthority(role))).when(authentication).getAuthorities();
@@ -488,14 +488,19 @@ class DashboardServiceTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
-    private User createUser() {
+    private AppUser createUser() {
         Branch branch = new Branch();
         branch.setId(BRANCH_ID);
 
-        User user = new User();
-        user.setId(UUID.randomUUID());
-        user.setName("Bagas Aditya");
+        AppUser user = new AppUser();
+        user.setIdUser(UUID.randomUUID());
+        user.setIdentityNumber("bagas");
+        user.setPassword("password");
         user.setBranch(branch);
+        user.setAuthorities(
+                List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
+        );
+
         return user;
     }
 
