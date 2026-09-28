@@ -2,7 +2,7 @@ package com.bagas.pinjam100.service.otp;
 
 import com.bagas.pinjam100.entity.otp.OtpVerification;
 import com.bagas.pinjam100.repository.otp.OtpVerificationRepository;
-import com.bagas.pinjam100.service.FlowKirimService;
+import com.bagas.pinjam100.service.KirimiService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class OtpVerificationServiceTest {
     private OtpVerificationRepository otpVerificationRepository;
 
     @Mock
-    private FlowKirimService flowKirimService;
+    private KirimiService kirimiService;
 
     @InjectMocks
     private OtpVerificationService otpVerificationService;
@@ -62,8 +62,8 @@ class OtpVerificationServiceTest {
                             otp.getExpiresAt().isAfter(LocalDateTime.now())
             ));
 
-            // Verify OTP sent through FlowKirim
-            verify(flowKirimService).sendOtp(
+            // Verify OTP sent through KirimiService
+            verify(kirimiService).sendOtpMessage(
                     PHONE_NUMBER,
                     otpCode
             );
@@ -106,8 +106,8 @@ class OtpVerificationServiceTest {
 
             verify(otpVerificationRepository).save(verification);
 
-            // Verify that FlowKirim is NOT called during verification
-            verifyNoInteractions(flowKirimService);
+            // Verify that KirimiService is NOT called during verification
+            verifyNoInteractions(kirimiService);
         }
 
         @Test
@@ -140,7 +140,7 @@ class OtpVerificationServiceTest {
                     never()
             ).save(any());
 
-            verifyNoInteractions(flowKirimService);
+            verifyNoInteractions(kirimiService);
         }
 
         @Test
@@ -180,7 +180,7 @@ class OtpVerificationServiceTest {
                     never()
             ).save(any());
 
-            verifyNoInteractions(flowKirimService);
+            verifyNoInteractions(kirimiService);
         }
 
         @Test
@@ -220,7 +220,7 @@ class OtpVerificationServiceTest {
                     never()
             ).save(any());
 
-            verifyNoInteractions(flowKirimService);
+            verifyNoInteractions(kirimiService);
         }
 
         @Test
@@ -271,7 +271,7 @@ class OtpVerificationServiceTest {
                     otpVerificationRepository
             ).save(verification);
 
-            verifyNoInteractions(flowKirimService);
+            verifyNoInteractions(kirimiService);
         }
     }
 
