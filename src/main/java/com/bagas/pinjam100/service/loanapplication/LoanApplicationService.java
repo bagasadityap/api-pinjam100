@@ -373,6 +373,16 @@ public class LoanApplicationService {
 
         customerLimitRepository.save(customerLimit);
 
+        if (review.getResult().equals(ReviewResult.REJECTED)) {
+            notificationService.sendToCustomer(
+                    loanApplication.getCustomer(),
+                    "Pengajuan Pinjaman Ditolak",
+                    "Mohon maaf pengajuan pinjaman Anda ditolak.",
+                    "verification",
+                    "pinjam100://"
+            );
+        }
+
         return new LoanApplicationResponse(
                 loanApplication,
                 customerLimit
@@ -422,6 +432,16 @@ public class LoanApplicationService {
         }
 
         customerLimitRepository.save(customerLimit);
+
+        if (approval.getStatus().equals(ApprovalStatus.REJECTED)) {
+            notificationService.sendToCustomer(
+                    loanApplication.getCustomer(),
+                    "Pengajuan Pinjaman Ditolak",
+                    "Mohon maaf pengajuan pinjaman Anda ditolak.",
+                    "verification",
+                    "pinjam100://"
+            );
+        }
 
         return new LoanApplicationResponse(
                 loanApplication,

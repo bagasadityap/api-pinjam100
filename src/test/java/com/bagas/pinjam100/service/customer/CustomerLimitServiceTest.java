@@ -184,7 +184,7 @@ class CustomerLimitServiceTest {
                     eq("Akun Anda Berhasil Diverifikasi"),
                     eq("Akun Anda telah berhasil diverifikasi. Anda kini dapat mulai mengajukan pinjaman."),
                     eq("verification"),
-                    isNull()
+                    eq("pinjam100://")
             );
         }
 

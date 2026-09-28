@@ -21,6 +21,7 @@ import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.DocumentRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
+import com.bagas.pinjam100.service.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -43,6 +44,7 @@ public class CustomerService {
     private final CustomerLimitRepository customerLimitRepository;
     private final DocumentRepository documentRepository;
     private final RekeningRepository rekeningRepository;
+    private final NotificationService notificationService;
 
     public CustomerService(
             CustomerRepository customerRepository,
@@ -50,7 +52,7 @@ public class CustomerService {
             CustomerEmploymentRepository customerEmploymentRepository,
             CustomerLimitRepository customerLimitRepository,
             DocumentRepository documentRepository,
-            RekeningRepository rekeningRepository
+            RekeningRepository rekeningRepository, NotificationService notificationService
     ) {
         this.customerRepository = customerRepository;
         this.customerDetailRepository = customerDetailRepository;
@@ -58,6 +60,7 @@ public class CustomerService {
         this.customerLimitRepository = customerLimitRepository;
         this.documentRepository = documentRepository;
         this.rekeningRepository = rekeningRepository;
+        this.notificationService = notificationService;
     }
 
     @Cacheable(cacheNames = CacheNames.CACHE_CUSTOMER_ALL, key = "'all_active'")
@@ -220,6 +223,16 @@ public class CustomerService {
 
         customer.setVerificationStatus(verificationStatus);
         customerRepository.save(customer);
+
+        if (verificationStatus == VerificationStatus.REJECTED) {
+            notificationService.sendToCustomer(
+                    customer,
+                    "Akun Anda Berhasil Diverifikasi",
+                    "Akun Anda telah berhasil diverifikasi. Anda kini dapat mulai mengajukan pinjaman.",
+                    "verification",
+                    "pinjam100://"
+            );
+        }
 
         return findDetailById(customerId);
     }

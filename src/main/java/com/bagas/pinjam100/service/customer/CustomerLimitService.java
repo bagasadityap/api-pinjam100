@@ -70,7 +70,7 @@ public class CustomerLimitService {
                 "Akun Anda Berhasil Diverifikasi",
                 "Akun Anda telah berhasil diverifikasi. Anda kini dapat mulai mengajukan pinjaman.",
                 "verification",
-                null
+                "pinjam100://"
         );
 
         return new LimitResponse(limit);

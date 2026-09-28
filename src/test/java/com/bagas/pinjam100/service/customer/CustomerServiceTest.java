@@ -20,6 +20,7 @@ import com.bagas.pinjam100.repository.customer.CustomerLimitRepository;
 import com.bagas.pinjam100.repository.customer.CustomerRepository;
 import com.bagas.pinjam100.repository.customer.DocumentRepository;
 import com.bagas.pinjam100.repository.customer.RekeningRepository;
+import com.bagas.pinjam100.service.notification.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -68,6 +69,9 @@ class CustomerServiceTest {
 
     @Mock
     private RekeningRepository rekeningRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private CustomerService customerService;
@@ -585,6 +589,45 @@ class CustomerServiceTest {
             assertNotNull(result);
             assertEquals(VerificationStatus.VERIFIED, customer.getVerificationStatus());
             verify(customerRepository).save(customer);
+            verifyNoInteractions(notificationService);
+        }
+
+        @Test
+        @DisplayName("should send notification when customer is rejected")
+        void shouldSendNotificationWhenCustomerIsRejected() {
+            Customer customer = createCustomer(CUSTOMER_ID, FULL_NAME);
+
+            when(customerRepository.findByIdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(Optional.of(customer));
+            when(customerRepository.save(any(Customer.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(customerDetailRepository.findByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(Optional.empty());
+            when(customerEmploymentRepository.findByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(Optional.empty());
+            when(customerLimitRepository.findByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(Optional.empty());
+            when(documentRepository.findAllByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(List.of());
+            when(rekeningRepository.findAllByCustomer_IdAndDeletedDateIsNull(CUSTOMER_ID))
+                    .thenReturn(List.of());
+
+            CustomerDetailResponse result = customerService.verifyCustomer(
+                    CUSTOMER_ID,
+                    VerificationStatus.REJECTED
+            );
+
+            assertNotNull(result);
+            assertEquals(VerificationStatus.REJECTED, customer.getVerificationStatus());
+
+            verify(customerRepository).save(customer);
+            verify(notificationService).sendToCustomer(
+                    customer,
+                    "Akun Anda Berhasil Diverifikasi",
+                    "Akun Anda telah berhasil diverifikasi. Anda kini dapat mulai mengajukan pinjaman.",
+                    "verification",
+                    "pinjam100://"
+            );
         }
 
         @Test
@@ -597,6 +640,8 @@ class CustomerServiceTest {
                     EntityNotFoundException.class,
                     () -> customerService.verifyCustomer(CUSTOMER_ID, VerificationStatus.VERIFIED)
             );
+
+            verifyNoInteractions(notificationService);
         }
     }
 
